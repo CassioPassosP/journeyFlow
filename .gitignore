@@ -1,0 +1,31 @@
+# Build outputs
+target/
+build/
+out/
+dist/
+coverage/
+*.class
+
+# Frontend dependencies and tooling
+node_modules/
+.vite/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
