@@ -1,4 +1,4 @@
 package com.journeyflow.repositories;
 
-public class UserRepository {
+public class ManagerRepository {
 }

@@ -1,4 +1,4 @@
 package com.journeyflow.services;
 
-public class UserService {
+public class PatternWorkerService {
 }

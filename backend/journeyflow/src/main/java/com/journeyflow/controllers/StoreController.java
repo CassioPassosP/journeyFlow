@@ -1,4 +1,4 @@
 package com.journeyflow.controllers;
 
-public class UserController {
+public class StoreController {
 }
