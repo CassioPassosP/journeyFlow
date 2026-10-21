@@ -1,0 +1,172 @@
+@media (max-width: 1024px) {
+  .main-content {
+    padding-right: var(--space-5);
+    padding-left: var(--space-5);
+  }
+
+  .header {
+    padding-right: var(--space-5);
+    padding-left: var(--space-5);
+  }
+
+  .summary-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .status-chart,
+  .updates-chart {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .sidebar-host {
+    position: static;
+    width: auto;
+  }
+
+  .sidebar {
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .sidebar__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .sidebar__brand {
+    margin: 0;
+    font-size: var(--font-size-md);
+  }
+
+  .sidebar__brand-mark {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .sidebar__nav {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-1);
+  }
+
+  .sidebar__link {
+    min-height: 2.4rem;
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
+    font-size: 0.65rem;
+  }
+
+  .sidebar__link .icon {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .sidebar__tip {
+    display: none;
+  }
+
+  .workspace {
+    margin-left: 0;
+  }
+
+  .header {
+    min-height: 4.4rem;
+    padding: 0 var(--space-4);
+  }
+
+  .header__account {
+    gap: var(--space-3);
+  }
+
+  .header__profile-copy {
+    display: none;
+  }
+
+  .main-content {
+    padding: var(--space-5) var(--space-4) var(--space-6);
+  }
+
+  .greeting {
+    margin-bottom: var(--space-5);
+  }
+
+  .greeting h1 {
+    font-size: var(--font-size-lg);
+  }
+
+  .dashboard-grid,
+  .summary-cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .summary-card {
+    min-height: 7.2rem;
+  }
+
+  .status-chart,
+  .updates-chart,
+  .recent-alerts {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 420px) {
+  .sidebar {
+    padding-right: var(--space-2);
+    padding-left: var(--space-2);
+  }
+
+  .sidebar__brand {
+    gap: var(--space-1);
+    font-size: var(--font-size-sm);
+  }
+
+  .sidebar__link {
+    padding: 0 var(--space-1);
+  }
+
+  .header__unit {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .status-chart__content {
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .status-chart__visual {
+    width: 42%;
+  }
+
+  .status-chart__legend-item {
+    grid-template-columns: 0.55rem minmax(4.7rem, 1fr) auto;
+    gap: var(--space-1);
+  }
+
+  .recent-alert {
+    grid-template-columns: 2.1rem minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .recent-alert__icon {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .recent-alert .status-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

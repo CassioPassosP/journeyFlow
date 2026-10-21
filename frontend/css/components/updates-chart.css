@@ -1,0 +1,16 @@
+.updates-chart {
+  grid-column: span 2;
+  min-height: 17.5rem;
+}
+
+.updates-chart__chart {
+  position: relative;
+  height: 12.8rem;
+  margin-top: var(--space-4);
+}
+
+.updates-chart__canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
