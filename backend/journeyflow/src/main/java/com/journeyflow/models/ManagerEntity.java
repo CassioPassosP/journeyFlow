@@ -1,4 +1,16 @@
 package com.journeyflow.models;
 
-public class ManagerEntity {
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import lombok.*;
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+public class ManagerEntity extends PatternWorkerEntity{
+
+    @Column(nullable = false)
+    String email;
+
+    @Column(name = "senha_hash", nullable = false)
+    String password;
 }
