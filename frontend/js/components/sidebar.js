@@ -15,7 +15,7 @@ export function renderSidebar(container, data) {
     <div class="sidebar">
       <div class="sidebar__top">
         <a class="sidebar__brand" href="#dashboard" aria-label="JourneyFlow, início">
-          <span class="sidebar__brand-mark" aria-hidden="true">J</span>
+          <img class="sidebar__brand-logo" src="assets/icons/logo.svg" alt="" aria-hidden="true">
           <span>JourneyFlow</span>
         </a>
         <nav class="sidebar__nav" aria-label="Menu principal">

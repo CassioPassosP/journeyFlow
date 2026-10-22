@@ -42,6 +42,17 @@
   height: 1.1rem;
 }
 
+.recent-alert__icon--asset {
+  width: 1.6rem;
+  height: 1.6rem;
+  background: transparent;
+}
+
+.recent-alert__icon--asset .icon {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
 .recent-alert__icon--attention {
   background: var(--color-warning-soft);
 }

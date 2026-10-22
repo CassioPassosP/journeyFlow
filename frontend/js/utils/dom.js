@@ -16,6 +16,15 @@ const iconPaths = {
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'
 };
 
+const iconAssets = {
+  onUsers: "onUsers.svg",
+  calendarCard: "calendar.svg",
+  attention: "attention.svg",
+  alertNok: "alertNok.svg",
+  bellAttention: "bell-attention.svg",
+  bellHelp: "bell-help.svg"
+};
+
 const statusConfig = {
   attention: { label: "Atenção", tone: "warning" },
   help: { label: "Precisa de ajuda", tone: "danger" },
@@ -36,13 +45,19 @@ export function escapeHtml(value) {
 }
 
 export function iconMarkup(name, className = "") {
+  const classes = ["icon", className].filter(Boolean).join(" ");
+  const assetFile = iconAssets[name];
+
+  if (assetFile) {
+    return `<img class="${classes} icon--asset" src="assets/icons/${assetFile}" alt="" aria-hidden="true">`;
+  }
+
   const pathMarkup = iconPaths[name];
 
   if (!iconFiles[name] || !pathMarkup) {
     throw new Error(`Ícone não cadastrado: ${name}`);
   }
 
-  const classes = ["icon", className].filter(Boolean).join(" ");
   return `<svg class="${classes}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${pathMarkup}</svg>`;
 }
 

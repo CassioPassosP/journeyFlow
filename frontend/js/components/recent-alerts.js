@@ -3,10 +3,16 @@ import { escapeHtml, getStatusConfig, iconMarkup } from "../utils/dom.js";
 export function renderRecentAlerts(container, data) {
   const alertsMarkup = data.map((alert) => {
     const status = getStatusConfig(alert.status);
+    const icon = alert.status === "attention"
+      ? "bellAttention"
+      : alert.status === "help"
+        ? "bellHelp"
+        : "bell";
+    const assetIconClass = icon === "bell" ? "" : " recent-alert__icon--asset";
     return `
       <article class="recent-alert">
-        <span class="recent-alert__icon recent-alert__icon--${status.tone}">
-          ${iconMarkup("bell")}
+        <span class="recent-alert__icon recent-alert__icon--${status.tone}${assetIconClass}">
+          ${iconMarkup(icon)}
         </span>
         <div class="recent-alert__details">
           <time class="recent-alert__when">${escapeHtml(alert.when)}</time>

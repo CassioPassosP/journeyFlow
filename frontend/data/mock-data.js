@@ -12,10 +12,10 @@ const mockData = {
     subtitle: "Acompanhe a integração da equipe e priorize conversas que fazem diferença"
   },
   summary: [
-    { id: "total", title: "Funcionários totais", value: 25, caption: "contratos ativos", icon: "users", tone: "neutral" },
-    { id: "learning", title: "Funcionários na trilha de aprendizagem", value: 16, caption: "Aprendizes", icon: "calendar", tone: "success" },
-    { id: "attention", title: "Funcionários em atenção", value: 3, caption: "Atualizações", icon: "heart", tone: "warning" },
-    { id: "pending", title: "Alertas não confirmados", value: 3, caption: "Atualizações aguardando confirmação", icon: "bell", tone: "danger" }
+    { id: "total", title: "Funcionários totais", value: 25, caption: "contratos ativos", icon: "onUsers", tone: "neutral" },
+    { id: "learning", title: "Funcionários na trilha de aprendizagem", value: 16, caption: "Aprendizes", icon: "calendarCard", tone: "success" },
+    { id: "attention", title: "Funcionários em atenção", value: 3, caption: "Atualizações", icon: "attention", tone: "warning" },
+    { id: "pending", title: "Alertas não confirmados", value: 3, caption: "Atualizações aguardando confirmação", icon: "alertNok", tone: "danger" }
   ],
   monthlyStatus: {
     totalFollowed: 25,
