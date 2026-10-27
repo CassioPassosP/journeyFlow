@@ -8,6 +8,7 @@ import java.util.Date;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
+@Table(name = "employee_entity")
 public class EmployeeEntity extends PatternWorkerEntity{
 
     @Column(name = "data_inicio_contrato", nullable = false)

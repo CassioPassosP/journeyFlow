@@ -2,17 +2,12 @@ package com.journeyflow.models;
 
 import java.util.Date;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
+@Table(name = "alerts")
 public class AlertEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +22,7 @@ public class AlertEntity {
     private StoreEntity store;
 
     @Column(nullable = false)
-    private String alertTitle;
+    private String alert_title;
 
     @Column(nullable = false)
     private String subtitle;

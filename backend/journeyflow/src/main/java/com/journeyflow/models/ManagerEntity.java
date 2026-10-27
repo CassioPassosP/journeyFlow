@@ -2,10 +2,12 @@ package com.journeyflow.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.*;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
+@Table(name = "manager_entity")
 public class ManagerEntity extends PatternWorkerEntity{
 
     @Column(nullable = false)
