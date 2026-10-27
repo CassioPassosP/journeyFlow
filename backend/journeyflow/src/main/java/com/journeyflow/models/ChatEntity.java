@@ -40,10 +40,10 @@ public class ChatEntity {
     @Column(name = "author", nullable = false)
     private String author;
 
-    @Column(name = "embedding")
-    @JdbcTypeCode(SqlTypes.VECTOR)
-    @Array(length = 1536)
-    private float[] embedding;
+    //spring n ta deixando eu rodar o projeto com esse atributo
+//    @JdbcTypeCode(SqlTypes.VECTOR)
+//    @Array(length = 1536)
+//    private float[] embedding;
 
     @Column(name = "date_sent", nullable = false)
     private LocalDateTime dateSent;

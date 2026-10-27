@@ -12,6 +12,10 @@ import java.time.OffsetDateTime;
 @Table(name = "pill_progress")
 public class PillProgressEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "id", nullable = false)
     private EmployeeEntity employee;
