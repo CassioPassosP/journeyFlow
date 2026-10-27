@@ -1,4 +1,7 @@
 package com.journeyflow.repositories;
 
-public class AlertRepository {
+import com.journeyflow.models.AlertEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AlertRepository extends JpaRepository<AlertEntity, Long> {
 }

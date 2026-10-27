@@ -1,4 +1,7 @@
 package com.journeyflow.repositories;
 
-public class ChatRepository {
+import com.journeyflow.models.ChatEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ChatRepository extends JpaRepository<ChatEntity, Long> {
 }
