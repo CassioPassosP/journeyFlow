@@ -1,4 +1,4 @@
-package com.journeyflow.dto;
+package com.journeyflow.dto.Alert;
 
 public class AlertResponseDto {
 }
