@@ -1,11 +1,11 @@
 const mockData = {
   unit: { name: "Loja Silva so - 1020", updatedAt: "hoje 10:23" },
-  user: { name: "Thiago silva", role: "Gestor da unidade" },
-  notifications: 3,
+  user: { name: "Thiago Silva", email: "thiago.silva@journeyflow.com", role: "Gestor da unidade" },
   menu: [
     { id: "dashboard", label: "Dashboard", icon: "dashboard", active: true },
     { id: "employees", label: "Funcionários", icon: "users" },
-    { id: "alerts", label: "Alertas", icon: "alerts" }
+    { id: "alerts", label: "Alertas", icon: "alerts" },
+    { id: "settings", label: "Configurações", icon: "settings" }
   ],
   sidebarTip: "Visualize, atualize e acompanhe a situação de cada colaborador da sua equipe de forma centralizada.",
   greeting: {

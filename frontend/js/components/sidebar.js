@@ -2,7 +2,10 @@ import { escapeHtml, iconMarkup } from "../utils/dom.js";
 
 export function renderSidebar(container, data, activePage = "dashboard") {
   const menuItems = data.menu.map((item) => {
-    const currentPage = item.id === activePage ? ' aria-current="page"' : "";
+    const currentPage = activePage === item.id || (activePage.startsWith("employees") && item.id === "employees")
+      || (activePage.startsWith("alerts") && item.id === "alerts")
+      ? ' aria-current="page"'
+      : "";
     return `
       <a class="sidebar__link" href="#${escapeHtml(item.id)}"${currentPage}>
         ${iconMarkup(item.icon)}

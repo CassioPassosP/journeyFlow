@@ -1,17 +1,19 @@
 .page-heading {
-  margin-bottom: var(--space-4);
+  min-height: 3.2rem;
+  margin-bottom: 0.9rem;
 }
 
 .page-heading h1 {
-  margin: 0 0 var(--space-1);
-  font-size: var(--font-size-lg);
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
   font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.04em;
 }
 
 .page-heading > p:last-child {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: 0.82rem;
 }
 
 .page-heading__breadcrumb {
@@ -98,6 +100,37 @@
   color: var(--color-surface);
 }
 
+.button__check {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.filter-trigger {
+  gap: 0.55rem;
+}
+
+.filter-trigger__icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+  transition: transform 160ms ease;
+}
+
+.filter-trigger[aria-expanded="true"] .filter-trigger__icon {
+  transform: rotate(180deg);
+}
+
 .button:disabled {
   cursor: default;
 }
@@ -141,9 +174,50 @@
   font-size: var(--font-size-xs);
 }
 
+.employees-table,
+.alerts-table {
+  table-layout: fixed;
+}
+
+.employees-table__name-column {
+  width: 38%;
+}
+
+.employees-table__days-column {
+  width: 14%;
+}
+
+.employees-table__status-column {
+  width: 16%;
+}
+
+.employees-table__interaction-column {
+  width: 19%;
+}
+
+.employees-table__action-column {
+  width: 13%;
+}
+
+.alerts-table__message-column {
+  width: 48%;
+}
+
+.alerts-table__status-column {
+  width: 20%;
+}
+
+.alerts-table__interaction-column {
+  width: 16%;
+}
+
+.alerts-table__action-column {
+  width: 16%;
+}
+
 .data-table thead {
-  background: #f0f0f0;
-  color: #777;
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
 }
 
 .data-table th {
@@ -173,8 +247,28 @@
   color: var(--color-text-muted);
 }
 
+.data-table th.status-cell,
+.data-table td.status-cell {
+  text-align: center;
+}
+
+.data-table td.status-cell .status-badge {
+  box-sizing: border-box;
+  display: flex;
+  width: min(9.5rem, 100%);
+  min-height: 1.8rem;
+  margin-inline: auto;
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+
 .alerts-table td:first-child {
   min-width: 20rem;
+}
+
+.employees-table th:nth-child(3),
+.alerts-table th.status-cell {
+  text-align: center;
 }
 
 .empty-state {
@@ -209,6 +303,8 @@
   padding: var(--space-5);
   border: 0;
   border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: 0 1rem 3rem #20263a30;
 }
 
@@ -237,6 +333,36 @@
 
 .filter-dialog .button {
   justify-self: end;
+}
+
+.employee-sort-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.employee-sort-controls__help {
+  flex-basis: 100%;
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+}
+
+.employee-sort-controls__label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.sort-trigger {
+  min-height: 2.1rem;
+  padding: 0.3rem 0.7rem;
+}
+
+.sort-trigger.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
 }
 
 .dialog-close {

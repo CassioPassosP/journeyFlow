@@ -68,7 +68,7 @@ button {
 .main-content {
   max-width: 100rem;
   margin: 0 auto;
-  padding: var(--space-6) 2.4rem 3rem;
+  padding: 1.2rem 2rem 1.4rem;
 }
 
 .greeting {

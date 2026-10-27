@@ -38,3 +38,22 @@
   --space-6: 1.75rem;
   --sidebar-width: 15.75rem;
 }
+
+:root[data-theme="dark"] {
+  --color-primary: #ff917f;
+  --color-primary-soft: #3c2b2c;
+  --color-bg: #171a20;
+  --color-surface: #22262e;
+  --color-border: #383e49;
+  --color-text: #f0f2f6;
+  --color-text-muted: #a7afbc;
+  --color-success: #6fce95;
+  --color-warning: #f2c15b;
+  --color-danger: #f07d7d;
+  --color-success-soft: #263d32;
+  --color-warning-soft: #403821;
+  --color-danger-soft: #422b2e;
+  --color-sidebar-tip-bg: #34282b;
+  --color-neutral-soft: #303640;
+  --shadow-card: 0 0.35rem 1.5rem #00000024;
+}
