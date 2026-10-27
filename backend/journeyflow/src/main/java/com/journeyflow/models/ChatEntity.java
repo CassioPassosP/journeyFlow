@@ -11,6 +11,7 @@ import lombok.*;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
+@Table(name = "messages")
 public class ChatEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

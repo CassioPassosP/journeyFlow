@@ -24,7 +24,7 @@ public class AlertEntity {
 
     @ManyToOne
     @JoinColumn(name = "store_id", nullable = false)
-    private Long store_id; 
+    private StoreEntity store;
 
     @Column(nullable = false)
     private String alertTitle;

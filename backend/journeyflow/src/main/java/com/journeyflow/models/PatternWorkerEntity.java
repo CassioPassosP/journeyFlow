@@ -8,9 +8,9 @@ public abstract class PatternWorkerEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
 
-    @OneToMany(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
-    long store_id;
+    private StoreEntity store;
 
     @Column(name = "nome", nullable = false)
     String name;
