@@ -1,4 +1,13 @@
 package com.journeyflow.dto.Chat;
 
-public class ChatResponseDto {
-}
+import java.time.Instant;
+import java.time.OffsetDateTime;
+
+public record ChatResponseDto(
+        Long id,
+        String sender,
+        String content,
+        String source,
+        OffsetDateTime createdAt,
+        Instant dateSent
+) {}

@@ -1,5 +1,5 @@
 package com.journeyflow.dto.Reports;
 
-public class ReportsResponseDto {
+public record ReportsResponseDto(
 
-}
+) {}

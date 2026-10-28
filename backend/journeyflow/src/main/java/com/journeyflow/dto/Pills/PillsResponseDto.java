@@ -1,5 +1,5 @@
 package com.journeyflow.dto.Pills;
 
-public class PillsResponseDto {
+public record PillsResponseDto(
 
-}
+) {}

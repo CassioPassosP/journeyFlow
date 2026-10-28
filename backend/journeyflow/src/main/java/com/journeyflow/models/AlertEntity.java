@@ -17,9 +17,6 @@ public class AlertEntity {
     @Column(name = "report_id")
     private Long report_id;
 
-    @Column(name = "user_id")
-    private Long user_id;
-
     @Column(name = "assigned_to")
     private Long assigned_to;
 

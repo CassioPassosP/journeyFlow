@@ -1,13 +1,9 @@
 package com.journeyflow.models;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.Array;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import lombok.*;
 
 @Entity
@@ -20,10 +16,7 @@ public class ChatEntity {
 
     @ManyToOne
     @JoinColumn(name = "employee_id", nullable = false)
-    private EmployeeEntity employeeEntity;
-
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private EmployeeEntity employee;
 
     @Column(name = "sender", nullable = false)
     private String sender;
@@ -46,5 +39,5 @@ public class ChatEntity {
 //    private float[] embedding;
 
     @Column(name = "date_sent", nullable = false)
-    private LocalDateTime dateSent;
+    private Instant dateSent;
 }
