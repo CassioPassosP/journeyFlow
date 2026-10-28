@@ -96,7 +96,6 @@ function renderHome(container, employee, messages, notice, redeemedRewards) {
         <section class="employee-tips">
           <h2>👍 Como participar</h2>
           <div><article><span>🗨️</span><p><strong>Responda perguntas</strong><small>Ganhe pontos ao conversar</small></p></article>
-            <article><span>💡</span><p><strong>Compartilhe sugestões</strong><small>Ajude a melhorar o ambiente</small></p></article>
             <article><span>⭐</span><p><strong>Conte sua experiência</strong><small>Sua opinião faz a diferença</small></p></article></div>
         </section>
       </div>

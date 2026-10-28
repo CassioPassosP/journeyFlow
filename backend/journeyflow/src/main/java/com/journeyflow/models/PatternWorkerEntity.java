@@ -12,7 +12,7 @@ public abstract class PatternWorkerEntity {
     @JoinColumn(name = "store_id", nullable = false)
     private StoreEntity store;
 
-    @Column(name = "nome", nullable = false)
+    @Column(name = "name", nullable = false)
     String name;
 
     @Column(name = "cargo", nullable = false)
