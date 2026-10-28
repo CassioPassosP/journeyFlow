@@ -7,7 +7,7 @@ import lombok.*;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
-@Table(name = "manager_entity")
+@Table(name = "users")
 public class ManagerEntity extends PatternWorkerEntity{
 
     @Column(nullable = false)

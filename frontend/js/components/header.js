@@ -1,6 +1,6 @@
 import { escapeHtml, iconMarkup } from "../utils/dom.js";
 
-export function renderHeader(container, data, { alerts, readNotifications, notificationsOpen = false, notificationError = "" }) {
+export function renderHeader(container, data, { alerts, readNotifications, notificationsOpen = false, notificationError = "", role = "manager" }) {
   const firstName = data.user.name.trim().split(/\s+/)[0];
   const initials = data.user.name
     .trim()
@@ -24,8 +24,8 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
   container.innerHTML = `
     <div class="header">
       <div class="header__unit-info">
-        <p class="header__unit">${escapeHtml(data.unit.name)}</p>
-        <p class="header__updated">Atualizado ${escapeHtml(data.unit.updatedAt)}</p>
+        <p class="header__unit">${escapeHtml(role === "employee" ? "Minha jornada" : data.unit.name)}</p>
+        <p class="header__updated">${escapeHtml(role === "employee" ? "Seu espaço de desenvolvimento" : `Atualizado ${data.unit.updatedAt}`)}</p>
       </div>
       <div class="header__account">
         <button class="header__notifications" type="button" data-toggle-notifications aria-label="Notificações${unreadCount ? `, ${unreadCount} não lidas` : ""}" aria-expanded="${notificationsOpen}" aria-controls="notification-popover">
@@ -48,6 +48,7 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
             <span class="header__role">${escapeHtml(data.user.role)}</span>
           </span>
         </div>
+        <a class="employee-mode-switch" href="${role === "employee" ? "#dashboard" : "#employee/home"}">${role === "employee" ? "Visão do gestor" : "Visão do funcionário"}</a>
       </div>
     </div>
   `;

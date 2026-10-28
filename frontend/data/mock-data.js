@@ -1,6 +1,27 @@
 const mockData = {
   unit: { name: "Loja Silva so - 1020", updatedAt: "hoje 10:23" },
   user: { name: "Thiago Silva", email: "thiago.silva@journeyflow.com", role: "Gestor da unidade" },
+  employee: {
+    role: "Atendente",
+    gender: "masculino",
+    points: 320,
+    chat: [
+      { author: "bot", text: "Oi, Thiago! 👋\nComo você está se sentindo hoje no trabalho?", time: "10:23", answers: ["😀 Muito bem", "🙂 Bem", "😐 Mais ou menos", "😡 Não muito bem"] },
+      { author: "employee", text: "Estou bem! O dia está tranquilo.", time: "10:24" },
+      { author: "bot", text: "Que bom! 🙂\nComo está sendo sua rotina como {role}? Você quer compartilhar uma experiência, contar uma dificuldade ou falar de algo que tem sido fácil?", time: "10:24", actions: ["⭐ Compartilhar experiência", "⚠️ Contar uma dificuldade", "✅ Falar de uma facilidade"] }
+    ],
+    rewards: [
+      { id: "lunch", emoji: "🍔", name: "Combo Lanche", points: 400 },
+      { id: "cinema-tickets", emoji: "🍿", name: "2 ingressos para o cinema", points: 800 },
+      { id: "day-off", emoji: "🏖️", name: "Vale Day Off", points: 1200 }
+    ],
+    history: [
+      { id: "history-1", emoji: "🗨️", label: "Respondeu pergunta da conversa", date: "10/12/2026 10:24", points: 10 },
+      { id: "history-3", emoji: "🧭", label: "Compartilhou sobre sua função", date: "08/12/2026 09:42", points: 20 },
+      { id: "history-4", emoji: "⭐", label: "Respondeu pergunta da conversa", date: "07/12/2026 16:30", points: 10 },
+      { id: "history-5", emoji: "⭐", label: "Compartilhou uma experiência", date: "05/12/2026 11:15", points: 20 }
+    ]
+  },
   menu: [
     { id: "dashboard", label: "Dashboard", icon: "dashboard", active: true },
     { id: "employees", label: "Funcionários", icon: "users" },

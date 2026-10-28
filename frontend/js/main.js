@@ -5,6 +5,7 @@ import { renderSummaryCards } from "./components/summary-cards.js";
 import { renderStatusChart } from "./components/status-chart.js";
 import { renderUpdatesChart } from "./components/updates-chart.js";
 import { renderRecentAlerts } from "./components/recent-alerts.js";
+import { renderEmployeePage } from "./components/employee-pages.js";
 import {
   loadReadNotifications,
   loadUserSettings,
@@ -31,6 +32,8 @@ let readNotifications = new Set();
 let theme = "light";
 let notificationsOpen = false;
 let notificationError = "";
+let employeeNotice = "";
+const redeemedRewards = new Set();
 
 function persistReadNotifications(nextReadNotifications) {
   try {
@@ -53,18 +56,35 @@ function currentRoute() {
 
 function renderPage() {
   const { page, detail } = currentRoute();
-  const activePage = page === "employees" ? "employees" : page === "alerts" ? "alerts" : page === "settings" ? "settings" : "dashboard";
-  renderSidebar(document.querySelector("#sidebar"), data, activePage);
-  renderHeader(document.querySelector("#header"), data, {
+  const isEmployee = page === "employee";
+  const employeePage = isEmployee ? detail || "home" : "";
+  const activePage = isEmployee
+    ? employeePage
+    : page === "employees" ? "employees" : page === "alerts" ? "alerts" : page === "settings" ? "settings" : "dashboard";
+  const headerData = isEmployee
+    ? { ...data, user: { ...data.user, role: data.employee.role } }
+    : data;
+  renderSidebar(document.querySelector("#sidebar"), data, activePage, isEmployee ? "employee" : "manager");
+  renderHeader(document.querySelector("#header"), headerData, {
     alerts: data.alerts,
     readNotifications,
     notificationsOpen,
-    notificationError
+    notificationError,
+    role: isEmployee ? "employee" : "manager"
   });
   const mainContent = document.querySelector("#main-content");
-  mainContent.classList.toggle("main-content--dashboard", page === "dashboard" || !["employees", "alerts", "settings"].includes(page));
+  document.querySelector("#sidebar").classList.toggle("sidebar-host--employee", isEmployee);
+  document.querySelector(".workspace").classList.toggle("workspace--employee", isEmployee);
+  mainContent.classList.toggle("main-content--employee", isEmployee);
+  mainContent.classList.toggle("main-content--dashboard", !isEmployee && (page === "dashboard" || !["employees", "alerts", "settings"].includes(page)));
 
-  if (page === "settings") {
+  if (isEmployee) {
+    if (employeePage === "settings") {
+      renderSettingsPage(mainContent, data.user, theme);
+    } else {
+      renderEmployeePage(mainContent, data, employeePage, data.employee.chat, employeeNotice, [...redeemedRewards]);
+    }
+  } else if (page === "settings") {
     renderSettingsPage(mainContent, data.user, theme);
   } else if (page === "employees" && detail === "new") {
     renderEmployeeForm(mainContent);
@@ -136,6 +156,45 @@ document.addEventListener("click", (event) => {
       notificationsOpen,
       notificationError
     });
+  }
+  const employeeAnswer = event.target.closest("[data-employee-answer]");
+  const employeeAction = event.target.closest("[data-employee-action]");
+  if (employeeAnswer || employeeAction) {
+    const text = employeeAnswer?.dataset.employeeAnswer || employeeAction.dataset.employeeAction.replace(/^[^ ]+\s/, "");
+    const normalizedText = text.toLocaleLowerCase("pt-BR");
+    const isSuggestion = normalizedText.includes("sugest");
+    const isExperience = normalizedText.includes("experiência");
+    const isWorkReflection = normalizedText.includes("dificuldade") || normalizedText.includes("facilidade");
+    const points = isSuggestion ? 0 : isExperience || isWorkReflection ? 20 : 10;
+    const now = new Date();
+    const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const date = now.toLocaleDateString("pt-BR");
+    data.employee.points += points;
+    data.employee.chat.push({ author: "employee", text, time });
+    data.employee.chat.push({ author: "bot", text: "Obrigado por compartilhar! Sua participação ajuda a tornar nosso ambiente cada vez melhor. ✨", time });
+    if (!isSuggestion) {
+      data.employee.history.unshift({
+        id: `history-${Date.now()}`,
+        emoji: isExperience ? "⭐" : isWorkReflection ? "🧭" : "🗨️",
+        label: isExperience ? "Compartilhou uma experiência" : isWorkReflection ? "Compartilhou sobre sua função" : "Respondeu pergunta da conversa",
+        date: `${date} ${time}`,
+        points
+      });
+    }
+    employeeNotice = points > 0
+      ? `Você ganhou ${points} pontos. Obrigado por participar!`
+      : "Obrigado por enviar sua sugestão. Ela ajuda a melhorar nosso ambiente.";
+    rerenderCurrentPage();
+  }
+  const redeemButton = event.target.closest("[data-redeem-reward]");
+  if (redeemButton) {
+    const reward = data.employee.rewards.find((item) => item.id === redeemButton.dataset.redeemReward);
+    if (reward && !redeemedRewards.has(reward.id) && data.employee.points >= reward.points) {
+      data.employee.points -= reward.points;
+      redeemedRewards.add(reward.id);
+      employeeNotice = `${reward.name} resgatado! Aproveite sua recompensa.`;
+      rerenderCurrentPage();
+    }
   }
   if (event.target.closest("[data-mark-all-read]")) {
     const nextReadNotifications = new Set(data.alerts.map((alert) => alert.id));
@@ -233,6 +292,27 @@ document.addEventListener("close", (event) => {
 }, true);
 
 document.addEventListener("submit", (event) => {
+  const chatForm = event.target.closest("[data-employee-chat-form]");
+  if (chatForm) {
+    event.preventDefault();
+    const input = chatForm.elements.message;
+    const text = input.value.trim();
+    if (!text) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    data.employee.chat.push({ author: "employee", text, time });
+    data.employee.chat.push({ author: "bot", text: "Obrigado por compartilhar sua ideia! Sua participação ajuda a melhorar nosso ambiente. 💛", time });
+    data.employee.history.unshift({
+      id: `history-${Date.now()}`,
+      emoji: "🗨️",
+      label: "Compartilhou uma mensagem na conversa",
+      date: `${now.toLocaleDateString("pt-BR")} ${time}`,
+      points: 0
+    });
+    employeeNotice = "Obrigado por participar da conversa e compartilhar sua ideia.";
+    rerenderCurrentPage();
+    return;
+  }
   const profileForm = event.target.closest("[data-profile-form]");
   if (profileForm) {
     event.preventDefault();
@@ -244,10 +324,15 @@ document.addEventListener("submit", (event) => {
       saveUserSettings({ name, email, theme });
       data.user.name = name;
       data.user.email = email;
-      renderHeader(document.querySelector("#header"), data, {
+      const isEmployee = currentRoute().page === "employee";
+      const headerData = isEmployee
+        ? { ...data, user: { ...data.user, role: data.employee.role } }
+        : data;
+      renderHeader(document.querySelector("#header"), headerData, {
         alerts: data.alerts,
         readNotifications,
-        notificationsOpen
+        notificationsOpen,
+        role: isEmployee ? "employee" : "manager"
       });
       message.textContent = "Perfil atualizado neste navegador.";
       message.classList.remove("settings-message--error");
