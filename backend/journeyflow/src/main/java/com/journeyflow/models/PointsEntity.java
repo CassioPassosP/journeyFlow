@@ -25,5 +25,5 @@ public class PointsEntity {
     private Integer points;
 
     @Column(name = "created_at")
-    private OffsetDateTime created_at;
+    private OffsetDateTime createdAt;
 }

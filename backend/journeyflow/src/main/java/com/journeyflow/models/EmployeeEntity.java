@@ -11,6 +11,11 @@ import java.util.Date;
 @Table(name = "users")
 public class EmployeeEntity extends PatternWorkerEntity{
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "employee_id", nullable = false)
+    long id;
+
     @Column(name = "data_inicio_contrato", nullable = false)
     Date initiationDate;
 
@@ -25,4 +30,25 @@ public class EmployeeEntity extends PatternWorkerEntity{
 
     @Column(name = "data_cadastro")
     OffsetDateTime registerDate;
+
+    @Column(name = "start_date", nullable = false)
+    Date startDate;
+
+    @Column(name = "consent")
+    boolean consent;
+
+    @Column(name = "consent_at")
+    private OffsetDateTime consentAt;
+
+    @Column(name = "points")
+    private int points;
+
+    @Column(name = "streak")
+    private int streak;
+
+    @Column(name = "last_active", nullable = false)
+    Date lastActive;
+
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
 }
