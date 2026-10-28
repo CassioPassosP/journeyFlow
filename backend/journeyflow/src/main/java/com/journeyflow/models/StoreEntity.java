@@ -14,8 +14,8 @@ public class StoreEntity {
     long id;
 
     @Column(name = "nome_loja", nullable = false)
-    String storeName;
+    private String storeName;
 
     @Column(name = "data_criacao", nullable = false)
-    Date creationDate;
+    private Date creationDate;
 }

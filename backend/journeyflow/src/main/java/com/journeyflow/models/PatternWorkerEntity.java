@@ -13,16 +13,17 @@ public abstract class PatternWorkerEntity {
     private StoreEntity store;
 
     @Column(name = "name", nullable = false)
-    String name;
+    private String name;
 
     @Column(name = "email",nullable = false)
-    String email;
+    private String email;
 
     @Column(name = "password_hash", nullable = false)
-    String password;
+    private String password;
 
     @Column(name = "role", nullable = false)
-    String position;
+    private String position;
 
-
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
 }

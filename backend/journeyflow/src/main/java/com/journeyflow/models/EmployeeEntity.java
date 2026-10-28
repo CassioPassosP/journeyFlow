@@ -5,50 +5,56 @@ import lombok.*;
 
 import java.time.OffsetDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
-@Table(name = "users")
+@Table(name = "employee")
 public class EmployeeEntity extends PatternWorkerEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "employee_id", nullable = false)
-    long id;
+    private UUID id;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "points_id")
+    private PointsEntity points;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "messages_id")
+    private ChatEntity messages;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pills_id")
+    private PillsEntity pills;
 
     @Column(name = "data_inicio_contrato", nullable = false)
-    Date initiationDate;
+    private Date initiationDate;
 
-    @Column(name = "estado_atual", nullable = false)
-    String currentState;
+    @Column(name = "current_State", nullable = false)
+    private String currentState;
 
-    @Column(name = "em_trilha_aprendizagem", nullable = false)
-    boolean inLearningPath;
+    @Column(name = "in_learning_path", nullable = false)
+    private boolean inLearningPath;
 
-    @Column(name = "ultima_interacao")
-    OffsetDateTime lastInteraction;
+    @Column(name = "last_interaction")
+    private OffsetDateTime lastInteraction;
 
-    @Column(name = "data_cadastro")
-    OffsetDateTime registerDate;
+    @Column(name = "register_date")
+    private OffsetDateTime registerDate;
 
     @Column(name = "start_date", nullable = false)
-    Date startDate;
+    private Date startDate;
 
     @Column(name = "consent")
-    boolean consent;
+    private boolean consent;
 
     @Column(name = "consent_at")
     private OffsetDateTime consentAt;
-
-    @Column(name = "points")
-    private int points;
 
     @Column(name = "streak")
     private int streak;
 
     @Column(name = "last_active", nullable = false)
-    Date lastActive;
-
-    @Column(name = "created_at")
-    private OffsetDateTime createdAt;
+    private Date lastActive;
 }

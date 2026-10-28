@@ -5,10 +5,11 @@ import lombok.*;
 
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
-@Table(name = "users")
+@Table(name = "manager")
 public class ManagerEntity extends PatternWorkerEntity{
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "manager_id", nullable = false)
-    long id;
+    private long id;
 }
