@@ -11,7 +11,7 @@ import java.util.Date;
 public class StoreEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    long id;
+    private Long id;
 
     @Column(name = "nome_loja", nullable = false)
     private String storeName;

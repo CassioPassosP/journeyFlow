@@ -1,4 +1,10 @@
 package com.journeyflow.dto.Store;
 
-public class StoreResponseDto {
-}
+import java.util.Date;
+
+public record StoreResponseDto(
+        Long id,
+        String storeName,
+        Date creationDate
+)
+{}

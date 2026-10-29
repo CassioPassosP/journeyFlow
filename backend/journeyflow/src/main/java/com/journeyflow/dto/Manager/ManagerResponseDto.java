@@ -1,5 +1,16 @@
 package com.journeyflow.dto.Manager;
 
-public record ManagerResponseDto(
+import com.journeyflow.models.StoreEntity;
 
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+public record ManagerResponseDto(
+        UUID id,
+        StoreEntity store,
+        String name,
+        String email,
+        String password,
+        String position,
+        OffsetDateTime createdAt
 ) {}
