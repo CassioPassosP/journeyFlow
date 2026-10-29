@@ -1,4 +1,5 @@
 package com.journeyflow.dto.Pills;
 
-public class PillsUpdateRequestDto {
-}
+public record PillsUpdateRequestDto(
+
+) {}

@@ -1,4 +1,12 @@
 package com.journeyflow.dto.Points;
 
-public class PointsCreateRequestDto {
-}
+import com.journeyflow.models.EmployeeEntity;
+
+import java.time.OffsetDateTime;
+
+public record PointsCreateRequestDto(
+        EmployeeEntity employee,
+        String reason,
+        Integer points,
+        OffsetDateTime createdAt
+) {}
