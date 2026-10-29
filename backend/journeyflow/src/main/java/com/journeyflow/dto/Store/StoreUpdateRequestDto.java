@@ -1,4 +1,8 @@
 package com.journeyflow.dto.Store;
 
-public class StoreUpdateRequestDto {
-}
+import java.util.Date;
+
+public record StoreUpdateRequestDto(
+        Long id,
+        String storeName
+) {}
