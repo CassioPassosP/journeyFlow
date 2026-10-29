@@ -1,4 +1,7 @@
 package com.journeyflow.repositories;
 
-public interface PointsRepository {
+import com.journeyflow.models.PointsEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PointsRepository extends JpaRepository<PointsEntity, Long> {
 }

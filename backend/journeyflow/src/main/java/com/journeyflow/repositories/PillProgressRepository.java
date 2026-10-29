@@ -1,4 +1,7 @@
 package com.journeyflow.repositories;
 
-public interface PillProgressRepository {
+import com.journeyflow.models.PillProgressEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PillProgressRepository extends JpaRepository<PillProgressEntity, Long> {
 }
