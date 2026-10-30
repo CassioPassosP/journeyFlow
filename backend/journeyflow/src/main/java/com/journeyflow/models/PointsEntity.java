@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor
 @Table(name = "points_log")
@@ -14,17 +16,18 @@ public class PointsEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "employee_id", nullable = false)
+ 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private EmployeeEntity employee;
-
-    @Column(name = "reason")
+ 
+    @Column(name = "reason", nullable = false)
     private String reason;
-
-    @Column(name = "points")
+ 
+    @Column(name = "points", nullable = false)
     private Integer points;
-
-    @Column(name = "created_at")
+ 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 }

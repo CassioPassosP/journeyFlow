@@ -18,4 +18,11 @@ public class StoreEntity {
 
     @Column(name = "data_criacao", nullable = false)
     private Date creationDate;
+
+    @PrePersist
+    void onCreate() {
+        if (creationDate == null) {
+            creationDate = new Date();
+        }
+    }
 }

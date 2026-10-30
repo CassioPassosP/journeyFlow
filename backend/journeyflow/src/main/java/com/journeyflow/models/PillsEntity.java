@@ -24,7 +24,7 @@ public class PillsEntity {
     @Column(name = "content", nullable = false)
     private String content;
 
-    @Column(name = "day_from")
+    @Column(name = "day_from", nullable = false)
     private Integer day_from;
 
     @Column(name = "quiz_question", nullable = false)
