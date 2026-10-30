@@ -1,14 +1,13 @@
 package com.journeyflow.services;
 
 import com.journeyflow.repositories.AlertRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AlertService {
 
-    private final AlertRepository alertRepository;
+    @Autowired
+    private AlertRepository alertRepository;
 
-    public AlertService(AlertRepository alertRepository) {
-        this.alertRepository = alertRepository;
-    }
 }

@@ -1,14 +1,13 @@
 package com.journeyflow.services;
 
 import com.journeyflow.repositories.PillProgressRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PillProgressService {
 
-    private final PillProgressRepository pillProgressEntity;
+    @Autowired
+    private PillProgressRepository pillProgressEntity;
 
-    public PillProgressService(PillProgressRepository pillProgressEntity) {
-        this.pillProgressEntity = pillProgressEntity;
-    }
 }

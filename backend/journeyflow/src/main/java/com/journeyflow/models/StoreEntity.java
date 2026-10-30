@@ -6,7 +6,9 @@ import lombok.*;
 import java.util.Date;
 
 @Entity
-@Data @NoArgsConstructor @AllArgsConstructor
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "stores")
 public class StoreEntity {
     @Id

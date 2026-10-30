@@ -1,14 +1,13 @@
 package com.journeyflow.services;
 
 import com.journeyflow.repositories.PillsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PillsService {
 
-    private final PillsRepository pillsRepository;
+    @Autowired
+    private PillsRepository pillsRepository;
 
-    public PillsService(PillsRepository pillsRepository) {
-        this.pillsRepository = pillsRepository;
-    }
 }

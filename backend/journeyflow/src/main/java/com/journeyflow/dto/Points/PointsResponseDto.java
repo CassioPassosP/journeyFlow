@@ -1,6 +1,7 @@
-package com.journeyflow.dto.Points;
+﻿package com.journeyflow.dto.Points;
 
 import com.journeyflow.models.EmployeeEntity;
+import com.journeyflow.models.PointsEntity;
 
 import java.time.OffsetDateTime;
 
@@ -10,4 +11,14 @@ public record PointsResponseDto(
         String reason,
         Integer points,
         OffsetDateTime createdAt
-) {}
+) {
+    public PointsResponseDto(PointsEntity pointsEntity) {
+        this(
+                pointsEntity.getId(),
+                pointsEntity.getEmployee(),
+                pointsEntity.getReason(),
+                pointsEntity.getPoints(),
+                pointsEntity.getCreatedAt()
+        );
+    }
+}

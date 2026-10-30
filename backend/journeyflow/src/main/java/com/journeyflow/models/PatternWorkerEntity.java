@@ -1,4 +1,4 @@
-package com.journeyflow.models;
+﻿package com.journeyflow.models;
 
 import jakarta.persistence.*;
 
@@ -6,6 +6,9 @@ import java.time.OffsetDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import lombok.Getter;
+
+@Getter
 @MappedSuperclass
 public abstract class PatternWorkerEntity {
 
@@ -29,3 +32,4 @@ public abstract class PatternWorkerEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 }
+
