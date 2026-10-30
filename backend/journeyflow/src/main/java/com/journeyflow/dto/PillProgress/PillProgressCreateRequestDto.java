@@ -1,12 +1,8 @@
 package com.journeyflow.dto.PillProgress;
 
-import com.journeyflow.models.EmployeeEntity;
-import com.journeyflow.models.PillsEntity;
-
-import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record PillProgressCreateRequestDto(
-        EmployeeEntity employee,
-        PillsEntity pill,
-        OffsetDateTime completedAt
+        UUID employeeId,
+        Long pillId
 ) {}

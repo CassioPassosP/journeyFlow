@@ -1,4 +1,4 @@
-﻿package com.journeyflow.dto.Manager;
+package com.journeyflow.dto.Manager;
 
 import com.journeyflow.models.ManagerEntity;
 import com.journeyflow.models.StoreEntity;
@@ -10,7 +10,6 @@ public record ManagerResponseDto(
         StoreEntity store,
         String name,
         String email,
-        String password,
         String position,
         OffsetDateTime createdAt
 ) {
@@ -20,7 +19,6 @@ public record ManagerResponseDto(
                 manager.getStore(),
                 manager.getName(),
                 manager.getEmail(),
-                manager.getPassword(),
                 manager.getPosition(),
                 manager.getCreatedAt()
         );

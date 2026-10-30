@@ -20,68 +20,48 @@ public class StoreService {
 
     private final StoreRepository storeRepository;
 
-    //create
     @Transactional
     public StoreResponseDto createStore(StoreCreateRequestDto dto) {
         StoreEntity store = new StoreEntity();
-
-        store.setStoreName(dto.storeName());
-
-        StoreEntity saved = storeRepository.save(store);
-        return new StoreResponseDto(saved);
+        applyFields(store, dto.storeName());
+        return new StoreResponseDto(storeRepository.save(store));
     }
 
-    //update
     @Transactional
-    public Optional<StoreResponseDto> updateStore(Long id,StoreUpdateRequestDto dto) {
+    public Optional<StoreResponseDto> updateStore(Long id, StoreUpdateRequestDto dto) {
         StoreEntity store = storeRepository.getOne(id);
-
         if (store.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja não encontrada");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja nao encontrada");
         }
 
-        store.setStoreName(dto.storeName());
-
-        StoreEntity saved = storeRepository.save(store);
-        return Optional.of(new StoreResponseDto(saved));
+        applyFields(store, dto.storeName());
+        return Optional.of(new StoreResponseDto(storeRepository.save(store)));
     }
 
-    //delete
     @Transactional
     public void deleteStore(Long id) {
         StoreEntity store = storeRepository.getOne(id);
-
         storeRepository.delete(store);
     }
 
-    //find all
     @Transactional
-    public List<StoreResponseDto> findAllStores(){
-        return storeRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public List<StoreResponseDto> findAllStores() {
+        return storeRepository.findAll().stream().map(this::toResponse).toList();
     }
 
-    //find by id
     @Transactional
     public StoreResponseDto findStoreById(Long id) {
         StoreEntity store = storeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Loja não encontrada"
-                ));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja nao encontrada"));
         return toResponse(store);
     }
 
-    // Converte Entity para Response DTO
-    private StoreResponseDto toResponse(StoreEntity store) {
+    // Copia o nome recebido no DTO para a entidade da loja.
+    private void applyFields(StoreEntity store, String storeName) {
+        store.setStoreName(storeName);
+    }
 
-        return new StoreResponseDto(
-                store.getId(),
-                store.getStoreName(),
-                store.getCreationDate()
-        );
+    private StoreResponseDto toResponse(StoreEntity store) {
+        return new StoreResponseDto(store.getId(), store.getStoreName(), store.getCreationDate());
     }
 }

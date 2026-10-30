@@ -2,10 +2,8 @@ package com.journeyflow.dto.Manager;
 
 import com.journeyflow.models.StoreEntity;
 
-import java.util.UUID;
-
 public record ManagerUpdateRequestDto(
-        UUID id,
+        Long id,
         StoreEntity store,
         String name,
         String email,

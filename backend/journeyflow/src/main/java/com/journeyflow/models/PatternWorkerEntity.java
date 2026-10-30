@@ -1,4 +1,4 @@
-﻿package com.journeyflow.models;
+package com.journeyflow.models;
 
 import jakarta.persistence.*;
 
@@ -7,8 +7,10 @@ import java.time.OffsetDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @MappedSuperclass
 public abstract class PatternWorkerEntity {
 

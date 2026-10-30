@@ -1,22 +1,22 @@
-﻿package com.journeyflow.dto.PillProgress;
+package com.journeyflow.dto.PillProgress;
 
-import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PillProgressEntity;
-import com.journeyflow.models.PillsEntity;
+import com.journeyflow.models.PillProgressId;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record PillProgressResponseDto(
-        Long id,
-        EmployeeEntity employee,
-        PillsEntity pill,
+        PillProgressId id,
+        UUID employeeId,
+        Long pillId,
         OffsetDateTime completedAt
 ) {
     public PillProgressResponseDto(PillProgressEntity progress) {
         this(
-                null,
-                progress.getEmployee(),
-                progress.getPill(),
+                progress.getId(),
+                progress.getEmployee().getId(),
+                progress.getPill().getId(),
                 progress.getCompletedAt()
         );
     }

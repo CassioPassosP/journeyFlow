@@ -1,11 +1,16 @@
 package com.journeyflow.dto.Chat;
 
+import com.journeyflow.models.enums.ContentSource;
+import com.journeyflow.models.enums.MessageSender;
+
 import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record ChatCreateRequestDto(
-        String sender,
+        UUID employeeId,
+        MessageSender sender,
         String content,
-        String source,
+        ContentSource source,
+        String author,
         Instant dateSent
 ) {}
