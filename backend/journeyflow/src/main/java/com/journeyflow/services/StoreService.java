@@ -6,7 +6,7 @@ import com.journeyflow.dto.Store.StoreUpdateRequestDto;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.repositories.StoreRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,10 +15,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@AllArgsConstructor
 public class StoreService {
 
-    @Autowired
-    private StoreRepository storeRepository;
+    private final StoreRepository storeRepository;
 
     //create
     @Transactional
@@ -35,6 +35,10 @@ public class StoreService {
     @Transactional
     public Optional<StoreResponseDto> updateStore(Long id,StoreUpdateRequestDto dto) {
         StoreEntity store = storeRepository.getOne(id);
+
+        if (store.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja não encontrada");
+        }
 
         store.setStoreName(dto.storeName());
 
@@ -80,5 +84,4 @@ public class StoreService {
                 store.getCreationDate()
         );
     }
-
 }

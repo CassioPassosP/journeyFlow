@@ -7,6 +7,5 @@ import java.time.OffsetDateTime;
 public record PointsCreateRequestDto(
         EmployeeEntity employee,
         String reason,
-        Integer points,
-        OffsetDateTime createdAt
+        Integer points
 ) {}

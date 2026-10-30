@@ -10,6 +10,5 @@ public record ManagerCreateRequestDto(
         String name,
         String email,
         String password,
-        String position,
-        OffsetDateTime createdAt
+        String position
 ) {}

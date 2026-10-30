@@ -15,7 +15,6 @@ public record EmployeeCreateRequestDto(
         String email,
         String password,
         String position,
-        OffsetDateTime createdAt,
         PointsEntity points,
         ChatEntity messages,
         PillsEntity pilss,

@@ -11,7 +11,6 @@ public record AlertCreateRequestDto(
         String urgency,
         String status,
         boolean reminder_sent,
-        OffsetDateTime created_at,
         OffsetDateTime answered_at,
         Date alert_date,
         String alert_title,

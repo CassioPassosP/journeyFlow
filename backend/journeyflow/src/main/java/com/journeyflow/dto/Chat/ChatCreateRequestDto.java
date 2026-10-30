@@ -7,6 +7,5 @@ public record ChatCreateRequestDto(
         String sender,
         String content,
         String source,
-        OffsetDateTime createdAt,
         Instant dateSent
 ) {}

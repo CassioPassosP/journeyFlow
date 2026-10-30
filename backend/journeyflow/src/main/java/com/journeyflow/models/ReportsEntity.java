@@ -1,4 +1,4 @@
-package com.journeyflow.models;
+﻿package com.journeyflow.models;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,7 +23,7 @@ public class ReportsEntity {
     private Long id;
  
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "employee_id", nullable = false)
     private EmployeeEntity employee;
  
     @Column(name = "original_text", nullable = false)
@@ -57,3 +57,4 @@ public class ReportsEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 }
+

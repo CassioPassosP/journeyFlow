@@ -1,18 +1,19 @@
-package com.journeyflow.dto.Reports;
+﻿package com.journeyflow.dto.Reports;
 
-import com.journeyflow.models.EmployeeEntity;
+import com.journeyflow.models.enums.ContentSource;
+import com.journeyflow.models.enums.ReportKind;
+import com.journeyflow.models.enums.ReportStatus;
 
-import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record ReportsCreateRequestDto(
-        EmployeeEntity employee,
+        UUID employee,
         String originalText,
         String editedText,
         String summary,
         String topic,
-        String kind,
-        String source,
-        String status,
-        boolean helpRequest,
-        OffsetDateTime createdAt
+        ReportKind kind,
+        ContentSource source,
+        ReportStatus status,
+        boolean helpRequest
 ) {}
