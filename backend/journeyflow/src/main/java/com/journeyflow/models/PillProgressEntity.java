@@ -1,29 +1,38 @@
 package com.journeyflow.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
+/**
+ * Antes: @Id Long id + dois @OneToOne(cascade = ALL) ambos com @JoinColumn(name = "id")
+ * (colunas duplicadas e cascade que apagaria colaborador/pilula junto com o progresso).
+ * Agora: chave composta (user_id, pill_id) + dois @ManyToOne LAZY sem cascade.
+ * A coluna identity "id" da tabela e preenchida pelo banco e nao e mapeada.
+ */
 @Entity
-@Data @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @NoArgsConstructor
 @Table(name = "pill_progress")
 public class PillProgressEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId
+    private PillProgressId id;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "id", nullable = false)
+    @MapsId("userId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private EmployeeEntity employee;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "id", nullable = false)
+    @MapsId("pillId")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "pill_id", nullable = false)
     private PillsEntity pill;
 
-    @Column(name = "completed_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "completed_at", nullable = false, updatable = false)
     private OffsetDateTime completedAt;
 }

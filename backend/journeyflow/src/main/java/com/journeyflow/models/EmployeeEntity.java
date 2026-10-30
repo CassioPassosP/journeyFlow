@@ -8,25 +8,13 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Data @NoArgsConstructor @AllArgsConstructor
+@Data @NoArgsConstructor @AllArgsConstructor @EqualsAndHashCode(callSuper = true)
 @Table(name = "employee")
 public class EmployeeEntity extends PatternWorkerEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID id;
-
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "points_id")
-    private PointsEntity points;
-
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "messages_id")
-    private ChatEntity messages;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pills_id")
-    private PillsEntity pills;
 
     @Column(name = "data_inicio_contrato", nullable = false)
     private Date initiationDate;
@@ -58,3 +46,10 @@ public class EmployeeEntity extends PatternWorkerEntity{
     @Column(name = "last_active", nullable = false)
     private Date lastActive;
 }
+
+/**
+ * employee.points_id / messages_id / pills_id existem no banco com a FK invertida
+ * (colaborador -> 1 registro filho). O lado "muitos" correto fica nas tabelas filhas
+ * (points_log, messages, pill_progress), que apontam para o colaborador via @ManyToOne.
+ * Aquelas tres colunas deixam de ser mapeadas.
+ */
