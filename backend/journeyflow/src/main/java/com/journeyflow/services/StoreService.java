@@ -1,5 +1,6 @@
 package com.journeyflow.services;
 
+import com.journeyflow.dto.Store.StoreResponseDto;
 import com.journeyflow.repositories.StoreRepository;
 import org.springframework.stereotype.Service;
 
