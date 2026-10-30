@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class PointsService {
@@ -22,26 +24,32 @@ public class PointsService {
 
     @Transactional
     public PointsResponseDto createPoints(PointsCreateRequestDto dto) {
+        if (dto.reason() == null || dto.reason().isBlank() || dto.points() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Motivo e quantidade de pontos sao obrigatorios");
+        }
         EmployeeEntity employee = findEmployee(dto.employee());
+
         PointsEntity points = new PointsEntity();
+
+        points.setEmployee(employee);
         points.setReason(dto.reason());
-        applyFields(points, employee, dto.points());
+        points.setPoints(dto.points());
+
         return new PointsResponseDto(pointsRepository.save(points));
     }
 
     @Transactional
     public PointsResponseDto updatePoints(Long id, PointsUpdateRequestDto dto) {
         PointsEntity points = pointsRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Registro de pontos nao encontrado"
-                ));
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Registro de pontos nao encontrado"));
 
-        EmployeeEntity employee = dto.employee() == null
-                ? points.getEmployee()
-                : findEmployee(dto.employee());
-        Integer amount = dto.points() == null ? points.getPoints() : dto.points();
-        applyFields(points, employee, amount);
+        if (dto.employee() != null) points.setEmployee(findEmployee(dto.employee()));
+        if (dto.points() != null) points.setPoints(dto.points());
 
         return new PointsResponseDto(pointsRepository.save(points));
     }
@@ -49,24 +57,40 @@ public class PointsService {
     @Transactional
     public void deletePoints(Long id) {
         PointsEntity points = pointsRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Registro de pontos nao encontrado"
-                ));
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Registro de pontos nao encontrado"));
+
         pointsRepository.delete(points);
     }
 
-    // Aplica o funcionario e a quantidade de pontos na entidade.
-    private void applyFields(PointsEntity points, EmployeeEntity employee, Integer amount) {
-        points.setEmployee(employee);
-        points.setPoints(amount);
+    @Transactional
+    public List<PointsResponseDto> findAllPoints() {
+        return pointsRepository.findAll()
+                .stream()
+                .map(PointsResponseDto::new)
+                .toList();
+    }
+
+    @Transactional
+    public PointsResponseDto findPointsById(Long id) {
+        return pointsRepository.findById(id)
+                .map(PointsResponseDto::new)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Registro de pontos nao encontrado"));
     }
 
     private EmployeeEntity findEmployee(EmployeeEntity employeeDto) {
         if (employeeDto == null || employeeDto.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID do funcionario e obrigatorio");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ID do funcionario e obrigatorio");
         }
         return employeeRepository.findById(employeeDto.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionario nao encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Funcionario nao encontrado"));
     }
 }

@@ -26,8 +26,29 @@ public class ManagerService {
 
     @Transactional
     public ManagerResponseDto createManager(ManagerCreateRequestDto dto) {
+        if (dto.store() == null || dto.store().getId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ID da loja e obrigatorio");
+        }
+        if (dto.name() == null || dto.name().isBlank() || dto.email() == null || dto.email().isBlank()
+                || dto.position() == null || dto.position().isBlank() || dto.password() == null || dto.password().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Nome, email, cargo e senha sao obrigatorios");
+        }
+        StoreEntity store = storeRepository.findById(dto.store().getId())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Loja nao encontrada"));
+
         ManagerEntity manager = new ManagerEntity();
-        applyFields(manager, dto.store(), dto.name(), dto.email(), dto.password(), dto.position());
+        manager.setStore(store);
+        manager.setName(dto.name());
+        manager.setEmail(dto.email());
+        manager.setPassword(passwordEncoder.encode(dto.password()));
+        manager.setPosition(dto.position());
         return new ManagerResponseDto(managerRepository.save(manager));
     }
 
@@ -35,46 +56,53 @@ public class ManagerService {
     public ManagerResponseDto updateManager(Long id, ManagerUpdateRequestDto dto) {
         ManagerEntity manager = managerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente nao encontrado"));
-        applyFields(manager, dto.store(), dto.name(), dto.email(), dto.password(), dto.position());
+        if (dto.store() == null || dto.store().getId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ID da loja e obrigatorio");
+        }
+        if (dto.name() == null || dto.name().isBlank() || dto.email() == null || dto.email().isBlank()
+                || dto.position() == null || dto.position().isBlank() || dto.password() == null || dto.password().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Nome, email, cargo e senha sao obrigatorios");
+        }
+        StoreEntity store = storeRepository.findById(dto.store().getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Loja nao encontrada"));
+
+        manager.setStore(store);
+        manager.setName(dto.name());
+        manager.setEmail(dto.email());
+        manager.setPassword(passwordEncoder.encode(dto.password()));
+        manager.setPosition(dto.position());
         return new ManagerResponseDto(managerRepository.save(manager));
     }
 
     @Transactional
     public void deleteManager(Long id) {
         ManagerEntity manager = managerRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente nao encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Gerente nao encontrado"));
         managerRepository.delete(manager);
     }
 
     @Transactional
     public List<ManagerResponseDto> findAllManagers() {
-        return managerRepository.findAll().stream().map(ManagerResponseDto::new).toList();
+        return managerRepository.findAll()
+                .stream()
+                .map(ManagerResponseDto::new)
+                .toList();
     }
 
     @Transactional
     public ManagerResponseDto findManagerById(Long id) {
         return managerRepository.findById(id)
                 .map(ManagerResponseDto::new)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente nao encontrado"));
-    }
-
-    // Valida os dados, busca a loja e preenche os campos do gerente.
-    private void applyFields(ManagerEntity manager, StoreEntity storeDto, String name, String email, String password, String position) {
-        if (storeDto == null || storeDto.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da loja e obrigatorio");
-        }
-        if (name == null || name.isBlank() || email == null || email.isBlank() || position == null || position.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nome, email e cargo sao obrigatorios");
-        }
-        if (password == null || password.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Senha obrigatoria");
-        }
-        StoreEntity store = storeRepository.findById(storeDto.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja nao encontrada"));
-        manager.setStore(store);
-        manager.setName(name);
-        manager.setEmail(email);
-        manager.setPassword(passwordEncoder.encode(password));
-        manager.setPosition(position);
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Gerente nao encontrado"));
     }
 }

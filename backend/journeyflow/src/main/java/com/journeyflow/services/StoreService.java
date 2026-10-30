@@ -22,43 +22,63 @@ public class StoreService {
 
     @Transactional
     public StoreResponseDto createStore(StoreCreateRequestDto dto) {
+        if (dto.storeName() == null || dto.storeName().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Nome da loja e obrigatorio");
+        }
         StoreEntity store = new StoreEntity();
-        applyFields(store, dto.storeName());
+
+        store.setStoreName(dto.storeName());
+        store.setCreationDate(dto.creationDate());
+
         return new StoreResponseDto(storeRepository.save(store));
     }
 
     @Transactional
     public Optional<StoreResponseDto> updateStore(Long id, StoreUpdateRequestDto dto) {
-        StoreEntity store = storeRepository.getOne(id);
-        if (store.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja nao encontrada");
-        }
+        StoreEntity store = storeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Loja nao encontrada"));
 
-        applyFields(store, dto.storeName());
+        if (dto.storeName() == null || dto.storeName().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Nome da loja e obrigatorio");
+        }
+        store.setStoreName(dto.storeName());
+
         return Optional.of(new StoreResponseDto(storeRepository.save(store)));
     }
 
     @Transactional
     public void deleteStore(Long id) {
-        StoreEntity store = storeRepository.getOne(id);
+        StoreEntity store = storeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Loja nao encontrada"));
+
         storeRepository.delete(store);
     }
 
     @Transactional
     public List<StoreResponseDto> findAllStores() {
-        return storeRepository.findAll().stream().map(this::toResponse).toList();
+        return storeRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional
     public StoreResponseDto findStoreById(Long id) {
         StoreEntity store = storeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja nao encontrada"));
-        return toResponse(store);
-    }
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Loja nao encontrada"));
 
-    // Copia o nome recebido no DTO para a entidade da loja.
-    private void applyFields(StoreEntity store, String storeName) {
-        store.setStoreName(storeName);
+        return toResponse(store);
     }
 
     private StoreResponseDto toResponse(StoreEntity store) {

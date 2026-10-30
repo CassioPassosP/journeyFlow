@@ -34,7 +34,9 @@ public class PillProgressService {
         PillProgressId id = new PillProgressId(employee.getId(), pill.getId());
 
         if (pillProgressRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Progresso da pilula ja existe");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Progresso da pilula ja existe");
         }
 
         return new PillProgressResponseDto(pillProgressRepository.save(newProgress(employee, pill)));
@@ -61,7 +63,9 @@ public class PillProgressService {
             return new PillProgressResponseDto(currentProgress);
         }
         if (pillProgressRepository.existsById(newId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Progresso de destino ja existe");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Progresso de destino ja existe");
         }
 
         pillProgressRepository.delete(currentProgress);
@@ -104,7 +108,9 @@ public class PillProgressService {
 
     private EmployeeEntity findEmployee(UUID employeeId) {
         if (employeeId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID do funcionario e obrigatorio");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ID do funcionario e obrigatorio");
         }
         return employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -115,7 +121,9 @@ public class PillProgressService {
 
     private PillsEntity findPill(Long pillId) {
         if (pillId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da pilula e obrigatorio");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ID da pilula e obrigatorio");
         }
         return pillsRepository.findById(pillId)
                 .orElseThrow(() -> new ResponseStatusException(

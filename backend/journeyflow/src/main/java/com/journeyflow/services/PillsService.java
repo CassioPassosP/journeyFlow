@@ -21,9 +21,35 @@ public class PillsService {
 
     @Transactional
     public PillsResponseDto createPill(PillsCreateRequestDto dto) {
+        validate(dto.title(), dto.content(), dto.day_from(), dto.quiz_question(), dto.quiz_options(), dto.quiz_correct());
+
         PillsEntity pill = new PillsEntity();
-        applyFields(pill, dto.title(), dto.content(), dto.day_from(),
-                dto.quiz_question(), dto.quiz_options(), dto.quiz_correct());
+
+        pill.setTitle(dto.title());
+        pill.setContent(dto.content());
+        pill.setDay_from(dto.day_from());
+        pill.setQuiz_question(dto.quiz_question());
+        pill.setQuiz_options(dto.quiz_options());
+        pill.setQuiz_correct(dto.quiz_correct());
+
+        return new PillsResponseDto(pillsRepository.save(pill));
+    }
+
+    @Transactional
+    public PillsResponseDto updatePill(Long id, PillsUpdateRequestDto dto) {
+        PillsEntity pill = pillsRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Pilula nao encontrada"));
+        validate(dto.title(), dto.content(), dto.day_from(), dto.quiz_question(), dto.quiz_options(), dto.quiz_correct());
+
+        pill.setTitle(dto.title());
+        pill.setContent(dto.content());
+        pill.setDay_from(dto.day_from());
+        pill.setQuiz_question(dto.quiz_question());
+        pill.setQuiz_options(dto.quiz_options());
+        pill.setQuiz_correct(dto.quiz_correct());
 
         return new PillsResponseDto(pillsRepository.save(pill));
     }
@@ -31,10 +57,10 @@ public class PillsService {
     @Transactional
     public void deletePill(Long id) {
         PillsEntity pill = pillsRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Pilula nao encontrada"
-                ));
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Pilula nao encontrada"));
 
         pillsRepository.delete(pill);
     }
@@ -49,30 +75,22 @@ public class PillsService {
 
     @Transactional
     public PillsResponseDto findPillById(Long id) {
-        PillsEntity pill = pillsRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Pilula nao encontrada"
-                ));
-
-        return new PillsResponseDto(pill);
+        return pillsRepository.findById(id)
+                .map(PillsResponseDto::new)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Pilula nao encontrada"));
     }
 
-    // Copia para a pilula os campos recebidos no DTO.
-    private void applyFields(
-            PillsEntity pill,
-            String title,
-            String content,
-            Integer dayFrom,
-            String quizQuestion,
-            String quizOptions,
-            Integer quizCorrect
-    ) {
-        pill.setTitle(title);
-        pill.setContent(content);
-        pill.setDay_from(dayFrom);
-        pill.setQuiz_question(quizQuestion);
-        pill.setQuiz_options(quizOptions);
-        pill.setQuiz_correct(quizCorrect);
+    private void validate(String title, String content, Integer dayFrom, String quizQuestion,
+                          String quizOptions, Integer quizCorrect) {
+        if (title == null || title.isBlank() || content == null || content.isBlank() || dayFrom == null
+                || quizQuestion == null || quizQuestion.isBlank() || quizOptions == null || quizOptions.isBlank()
+                || quizCorrect == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Todos os campos da pilula sao obrigatorios");
+        }
     }
 }
