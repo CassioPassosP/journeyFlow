@@ -2,13 +2,13 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Chat.ChatCreateRequestDto;
 import com.journeyflow.dto.Chat.ChatResponseDto;
-import com.journeyflow.dto.Chat.ChatUpdateRequestDto;
 import com.journeyflow.models.ChatEntity;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.enums.ContentSource;
 import com.journeyflow.repositories.ChatRepository;
 import com.journeyflow.repositories.EmployeeRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -49,7 +49,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponseDto updateChat(Long id, ChatUpdateRequestDto dto) {
+    public ChatResponseDto updateChat(Long id, @Valid ChatCreateRequestDto dto) {
         ChatEntity chat = chatRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mensagem nao encontrada"));
         if (dto.employeeId() == null || dto.sender() == null || dto.content() == null || dto.content().isBlank()

@@ -1,11 +1,11 @@
 package com.journeyflow.services;
 
-import com.journeyflow.dto.Pills.PillsCreateRequestDto;
 import com.journeyflow.dto.Pills.PillsResponseDto;
-import com.journeyflow.dto.Pills.PillsUpdateRequestDto;
+import com.journeyflow.dto.Reports.ReportsCreateRequestDto;
 import com.journeyflow.models.PillsEntity;
 import com.journeyflow.repositories.PillsRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class PillsService {
     private final PillsRepository pillsRepository;
 
     @Transactional
-    public PillsResponseDto createPill(PillsCreateRequestDto dto) {
+    public PillsResponseDto createPill(@Valid ReportsCreateRequestDto dto) {
         validate(dto.title(), dto.content(), dto.day_from(), dto.quiz_question(), dto.quiz_options(), dto.quiz_correct());
 
         PillsEntity pill = new PillsEntity();
@@ -36,7 +36,7 @@ public class PillsService {
     }
 
     @Transactional
-    public PillsResponseDto updatePill(Long id, PillsUpdateRequestDto dto) {
+    public PillsResponseDto updatePill(Long id, @Valid ReportsCreateRequestDto dto) {
         PillsEntity pill = pillsRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(

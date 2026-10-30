@@ -2,12 +2,12 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Manager.ManagerCreateRequestDto;
 import com.journeyflow.dto.Manager.ManagerResponseDto;
-import com.journeyflow.dto.Manager.ManagerUpdateRequestDto;
 import com.journeyflow.models.ManagerEntity;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.repositories.ManagerRepository;
 import com.journeyflow.repositories.StoreRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,7 +53,7 @@ public class ManagerService {
     }
 
     @Transactional
-    public ManagerResponseDto updateManager(Long id, ManagerUpdateRequestDto dto) {
+    public ManagerResponseDto updateManager(Long id, @Valid ManagerCreateRequestDto dto) {
         ManagerEntity manager = managerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente nao encontrado"));
         if (dto.store() == null || dto.store().getId() == null) {

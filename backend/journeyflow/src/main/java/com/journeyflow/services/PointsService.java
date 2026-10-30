@@ -2,12 +2,12 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Points.PointsCreateRequestDto;
 import com.journeyflow.dto.Points.PointsResponseDto;
-import com.journeyflow.dto.Points.PointsUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PointsEntity;
 import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.PointsRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class PointsService {
     }
 
     @Transactional
-    public PointsResponseDto updatePoints(Long id, PointsUpdateRequestDto dto) {
+    public PointsResponseDto updatePoints(Long id, @Valid PointsCreateRequestDto dto) {
         PointsEntity points = pointsRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(

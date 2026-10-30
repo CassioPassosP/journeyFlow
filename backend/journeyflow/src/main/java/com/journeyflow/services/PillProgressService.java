@@ -2,7 +2,6 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.PillProgress.PillProgressCreateRequestDto;
 import com.journeyflow.dto.PillProgress.PillProgressResponseDto;
-import com.journeyflow.dto.PillProgress.PillProgressUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PillProgressEntity;
 import com.journeyflow.models.PillProgressId;
@@ -11,6 +10,7 @@ import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.PillProgressRepository;
 import com.journeyflow.repositories.PillsRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -46,7 +46,7 @@ public class PillProgressService {
     public PillProgressResponseDto updateProgress(
             UUID employeeId,
             Long pillId,
-            PillProgressUpdateRequestDto dto
+            @Valid PillProgressCreateRequestDto dto
     ) {
         PillProgressId currentId = new PillProgressId(employeeId, pillId);
         PillProgressEntity currentProgress = pillProgressRepository.findById(currentId)

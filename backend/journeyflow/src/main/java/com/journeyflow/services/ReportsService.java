@@ -2,12 +2,12 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Reports.ReportsCreateRequestDto;
 import com.journeyflow.dto.Reports.ReportsResponseDto;
-import com.journeyflow.dto.Reports.ReportsUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.ReportsEntity;
 import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.ReportsRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class ReportsService {
     }
 
     @Transactional
-    public ReportsResponseDto updateReport(Long id, ReportsUpdateRequestDto dto) {
+    public ReportsResponseDto updateReport(Long id, @Valid ReportsCreateRequestDto dto) {
         ReportsEntity report = reportsRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(

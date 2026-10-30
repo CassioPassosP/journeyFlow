@@ -2,12 +2,12 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Employee.EmployeeCreateRequestDto;
 import com.journeyflow.dto.Employee.EmployeeResponseDto;
-import com.journeyflow.dto.Employee.EmployeeUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.StoreRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,7 +65,7 @@ public class EmployeeService {
     }
 
     @Transactional
-    public EmployeeResponseDto updateEmployee(UUID id, EmployeeUpdateRequestDto dto) {
+    public EmployeeResponseDto updateEmployee(UUID id, @Valid EmployeeCreateRequestDto dto) {
         EmployeeEntity employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
