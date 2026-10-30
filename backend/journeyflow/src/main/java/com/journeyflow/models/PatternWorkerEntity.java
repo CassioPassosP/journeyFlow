@@ -3,12 +3,13 @@ package com.journeyflow.models;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
-import java.util.Date;
+
+import org.hibernate.annotations.CreationTimestamp;
 
 @MappedSuperclass
 public abstract class PatternWorkerEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "store_id", nullable = false)
     private StoreEntity store;
 
@@ -24,6 +25,7 @@ public abstract class PatternWorkerEntity {
     @Column(name = "role", nullable = false)
     private String position;
 
-    @Column(name = "created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 }
