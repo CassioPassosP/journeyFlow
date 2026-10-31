@@ -1,4 +1,4 @@
-﻿package com.journeyflow.dto.Chat;
+package com.journeyflow.dto.Chat;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;

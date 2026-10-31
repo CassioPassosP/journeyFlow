@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Reports.ReportsCreateRequestDto;
 import com.journeyflow.dto.Reports.ReportsResponseDto;
+import com.journeyflow.dto.Reports.ReportsUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.ReportsEntity;
 import com.journeyflow.repositories.EmployeeRepository;
@@ -44,7 +45,7 @@ public class ReportsService {
     }
 
     @Transactional
-    public ReportsResponseDto updateReport(Long id, @Valid ReportsCreateRequestDto dto) {
+    public ReportsResponseDto updateReport(Long id, @Valid ReportsUpdateRequestDto dto) {
         ReportsEntity report = reportsRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(

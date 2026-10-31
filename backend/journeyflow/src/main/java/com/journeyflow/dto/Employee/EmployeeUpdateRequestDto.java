@@ -4,6 +4,9 @@ import com.journeyflow.models.ChatEntity;
 import com.journeyflow.models.PillsEntity;
 import com.journeyflow.models.PointsEntity;
 import com.journeyflow.models.StoreEntity;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.OffsetDateTime;
 import java.util.Date;
@@ -11,23 +14,22 @@ import java.util.UUID;
 
 public record EmployeeUpdateRequestDto(
         UUID id,
-        StoreEntity store,
-        String name,
-        String email,
-        String password,
-        String position,
+        @NotNull StoreEntity store,
+        @NotBlank String name,
+        @NotBlank @Email String email,
+        @NotBlank String password,
+        @NotBlank String position,
         PointsEntity points,
         ChatEntity messages,
         PillsEntity pilss,
-        Date initiationDate,
-        String currentState,
+        @NotNull Date initiationDate,
+        @NotBlank String currentState,
         boolean inLearningPath,
         OffsetDateTime lastInteraction,
         OffsetDateTime registerDate,
-        Date startDate,
+        @NotNull Date startDate,
         boolean consent,
         OffsetDateTime consentAt,
         int streak,
-        Date lastActive
-)
-{}
+        @NotNull Date lastActive
+) {}

@@ -1,9 +1,8 @@
 package com.journeyflow.controllers;
 
-import com.journeyflow.dto.Manager.ManagerCreateRequestDto;
-import com.journeyflow.dto.Manager.ManagerResponseDto;
 import com.journeyflow.dto.PillProgress.PillProgressCreateRequestDto;
 import com.journeyflow.dto.PillProgress.PillProgressResponseDto;
+import com.journeyflow.dto.PillProgress.PillProgressUpdateRequestDto;
 import com.journeyflow.services.PillProgressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,47 +19,31 @@ public class PillProgressController {
 
     private final PillProgressService pillProgressService;
 
-    //create
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public PillProgressResponseDto create(
-            @Valid @RequestBody PillProgressCreateRequestDto request) {
-
+    public PillProgressResponseDto create(@Valid @RequestBody PillProgressCreateRequestDto request) {
         return pillProgressService.createProgress(request);
     }
 
-    //find all
     @GetMapping
     public List<PillProgressResponseDto> findAll() {
-
         return pillProgressService.findAllProgress();
     }
 
-    //find by id
-    @GetMapping("/{id}")
-    public PillProgressResponseDto findById(@PathVariable UUID id,
-                                            @PathVariable Long pillId) {
-
-        return pillProgressService.findProgressById(id, pillId);
+    @GetMapping("/{employeeId}/{pillId}")
+    public PillProgressResponseDto findById(@PathVariable UUID employeeId, @PathVariable Long pillId) {
+        return pillProgressService.findProgressById(employeeId, pillId);
     }
 
-    //update
-    @PutMapping("/{id}")
-    public PillProgressResponseDto update(
-            @PathVariable UUID id,
-            @PathVariable Long pillId,
-            @Valid @RequestBody PillProgressCreateRequestDto request) {
-
-        return pillProgressService.updateProgress(id, pillId, request);
+    @PutMapping("/{employeeId}/{pillId}")
+    public PillProgressResponseDto update(@PathVariable UUID employeeId, @PathVariable Long pillId,
+                                          @Valid @RequestBody PillProgressUpdateRequestDto request) {
+        return pillProgressService.updateProgress(employeeId, pillId, request);
     }
 
-    //delete
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{employeeId}/{pillId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id,
-            @PathVariable Long pillId) {
-
-        pillProgressService.deleteProgress(id, pillId);
+    public void delete(@PathVariable UUID employeeId, @PathVariable Long pillId) {
+        pillProgressService.deleteProgress(employeeId, pillId);
     }
-
 }

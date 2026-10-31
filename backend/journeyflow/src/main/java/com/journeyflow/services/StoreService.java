@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Store.StoreCreateRequestDto;
 import com.journeyflow.dto.Store.StoreResponseDto;
+import com.journeyflow.dto.Store.StoreUpdateRequestDto;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.repositories.StoreRepository;
 import jakarta.transaction.Transactional;
@@ -36,7 +37,7 @@ public class StoreService {
     }
 
     @Transactional
-    public Optional<StoreResponseDto> updateStore(Long id, @Valid StoreCreateRequestDto dto) {
+    public Optional<StoreResponseDto> updateStore(Long id, @Valid StoreUpdateRequestDto dto) {
         StoreEntity store = storeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,

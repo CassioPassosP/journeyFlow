@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Manager.ManagerCreateRequestDto;
 import com.journeyflow.dto.Manager.ManagerResponseDto;
+import com.journeyflow.dto.Manager.ManagerUpdateRequestDto;
 import com.journeyflow.models.ManagerEntity;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.repositories.ManagerRepository;
@@ -53,7 +54,7 @@ public class ManagerService {
     }
 
     @Transactional
-    public ManagerResponseDto updateManager(Long id, @Valid ManagerCreateRequestDto dto) {
+    public ManagerResponseDto updateManager(Long id, @Valid ManagerUpdateRequestDto dto) {
         ManagerEntity manager = managerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente nao encontrado"));
         if (dto.store() == null || dto.store().getId() == null) {

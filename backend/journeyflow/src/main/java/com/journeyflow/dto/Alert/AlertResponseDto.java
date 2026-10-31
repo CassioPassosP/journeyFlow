@@ -1,4 +1,4 @@
-﻿package com.journeyflow.dto.Alert;
+package com.journeyflow.dto.Alert;
 
 import java.sql.Date;
 import java.time.OffsetDateTime;

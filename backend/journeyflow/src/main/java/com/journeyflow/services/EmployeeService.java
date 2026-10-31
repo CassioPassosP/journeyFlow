@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Employee.EmployeeCreateRequestDto;
 import com.journeyflow.dto.Employee.EmployeeResponseDto;
+import com.journeyflow.dto.Employee.EmployeeUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.repositories.EmployeeRepository;
@@ -65,7 +66,7 @@ public class EmployeeService {
     }
 
     @Transactional
-    public EmployeeResponseDto updateEmployee(UUID id, @Valid EmployeeCreateRequestDto dto) {
+    public EmployeeResponseDto updateEmployee(UUID id, @Valid EmployeeUpdateRequestDto dto) {
         EmployeeEntity employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,

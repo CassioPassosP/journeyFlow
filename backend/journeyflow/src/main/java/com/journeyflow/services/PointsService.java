@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Points.PointsCreateRequestDto;
 import com.journeyflow.dto.Points.PointsResponseDto;
+import com.journeyflow.dto.Points.PointsUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PointsEntity;
 import com.journeyflow.repositories.EmployeeRepository;
@@ -41,7 +42,7 @@ public class PointsService {
     }
 
     @Transactional
-    public PointsResponseDto updatePoints(Long id, @Valid PointsCreateRequestDto dto) {
+    public PointsResponseDto updatePoints(Long id, @Valid PointsUpdateRequestDto dto) {
         PointsEntity points = pointsRepository.findById(id)
                 .orElseThrow(() ->
                         new ResponseStatusException(

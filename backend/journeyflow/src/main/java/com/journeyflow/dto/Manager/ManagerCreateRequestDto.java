@@ -1,14 +1,14 @@
 package com.journeyflow.dto.Manager;
 
 import com.journeyflow.models.StoreEntity;
-
-import java.time.OffsetDateTime;
-import java.util.UUID;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record ManagerCreateRequestDto(
-        StoreEntity store,
-        String name,
-        String email,
-        String password,
-        String position
+        @NotNull StoreEntity store,
+        @NotBlank String name,
+        @NotBlank @Email String email,
+        @NotBlank String password,
+        @NotBlank String position
 ) {}

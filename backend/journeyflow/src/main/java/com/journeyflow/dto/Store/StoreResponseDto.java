@@ -1,4 +1,4 @@
-﻿package com.journeyflow.dto.Store;
+package com.journeyflow.dto.Store;
 
 import com.journeyflow.models.StoreEntity;
 

@@ -1,8 +1,8 @@
 package com.journeyflow.dto.Store;
 
-import java.util.Date;
+import jakarta.validation.constraints.NotBlank;
 
 public record StoreUpdateRequestDto(
         Long id,
-        String storeName
+        @NotBlank String storeName
 ) {}

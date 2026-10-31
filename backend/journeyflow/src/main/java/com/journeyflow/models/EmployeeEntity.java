@@ -47,9 +47,3 @@ public class EmployeeEntity extends PatternWorkerEntity{
     private Date lastActive;
 }
 
-/**
- * employee.points_id / messages_id / pills_id existem no banco com a FK invertida
- * (colaborador -> 1 registro filho). O lado "muitos" correto fica nas tabelas filhas
- * (points_log, messages, pill_progress), que apontam para o colaborador via @ManyToOne.
- * Aquelas tres colunas deixam de ser mapeadas.
- */

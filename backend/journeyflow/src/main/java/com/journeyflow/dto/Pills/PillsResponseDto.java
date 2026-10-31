@@ -1,4 +1,4 @@
-﻿package com.journeyflow.dto.Pills;
+package com.journeyflow.dto.Pills;
 
 import com.journeyflow.models.PillsEntity;
 

@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.Chat.ChatCreateRequestDto;
 import com.journeyflow.dto.Chat.ChatResponseDto;
+import com.journeyflow.dto.Chat.ChatUpdateRequestDto;
 import com.journeyflow.models.ChatEntity;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.enums.ContentSource;
@@ -49,7 +50,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponseDto updateChat(Long id, @Valid ChatCreateRequestDto dto) {
+    public ChatResponseDto updateChat(Long id, @Valid ChatUpdateRequestDto dto) {
         ChatEntity chat = chatRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mensagem nao encontrada"));
         if (dto.employeeId() == null || dto.sender() == null || dto.content() == null || dto.content().isBlank()

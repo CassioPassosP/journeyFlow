@@ -1,4 +1,4 @@
-﻿package com.journeyflow.models;
+package com.journeyflow.models;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

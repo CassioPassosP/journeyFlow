@@ -1,4 +1,4 @@
-﻿package com.journeyflow.dto.Points;
+package com.journeyflow.dto.Points;
 
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PointsEntity;

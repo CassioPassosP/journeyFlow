@@ -1,8 +1,10 @@
 package com.journeyflow.dto.PillProgress;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.util.UUID;
 
 public record PillProgressUpdateRequestDto(
-        UUID employeeId,
-        Long pillId
+        @NotNull UUID employeeId,
+        @NotNull Long pillId
 ) {}

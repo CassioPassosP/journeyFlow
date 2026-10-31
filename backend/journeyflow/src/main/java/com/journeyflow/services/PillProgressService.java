@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import com.journeyflow.dto.PillProgress.PillProgressCreateRequestDto;
 import com.journeyflow.dto.PillProgress.PillProgressResponseDto;
+import com.journeyflow.dto.PillProgress.PillProgressUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PillProgressEntity;
 import com.journeyflow.models.PillProgressId;
@@ -46,7 +47,7 @@ public class PillProgressService {
     public PillProgressResponseDto updateProgress(
             UUID employeeId,
             Long pillId,
-            @Valid PillProgressCreateRequestDto dto
+            @Valid PillProgressUpdateRequestDto dto
     ) {
         PillProgressId currentId = new PillProgressId(employeeId, pillId);
         PillProgressEntity currentProgress = pillProgressRepository.findById(currentId)
