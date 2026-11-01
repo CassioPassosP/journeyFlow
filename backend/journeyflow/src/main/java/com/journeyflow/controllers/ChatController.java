@@ -1,15 +1,20 @@
 package com.journeyflow.controllers;
 
-import com.journeyflow.dto.Chat.ChatCreateRequestDto;
-import com.journeyflow.dto.Chat.ChatResponseDto;
-import com.journeyflow.dto.Chat.ChatUpdateRequestDto;
-import com.journeyflow.services.ChatService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.UUID;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.journeyflow.dto.Chat.ChatCreateRequestDto;
+import com.journeyflow.dto.Chat.ChatResponseDto;
+import com.journeyflow.dto.Chat.ChatUpdateRequestDto;
+import com.journeyflow.dto.Common.PageResponseDto;
+import com.journeyflow.services.ChatService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/chat")
@@ -24,9 +29,12 @@ public class ChatController {
         return chatService.createChat(request);
     }
 
+    /** GET /chat?employeeId=...&page=0&size=20 (mais recentes primeiro). */
     @GetMapping
-    public List<ChatResponseDto> findAll() {
-        return chatService.findAllChats();
+    public PageResponseDto<ChatResponseDto> findAll(
+            @RequestParam(required = false) UUID employeeId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return chatService.findChats(employeeId, pageable);
     }
 
     @GetMapping("/{id}")

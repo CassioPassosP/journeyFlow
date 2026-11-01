@@ -1,42 +1,46 @@
 package com.journeyflow.dto.Alert;
 
-import java.sql.Date;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import com.journeyflow.models.AlertEntity;
+import com.journeyflow.models.enums.AlertDestination;
+import com.journeyflow.models.enums.AlertStatus;
+import com.journeyflow.models.enums.AlertUrgency;
 
 public record AlertResponseDto(
         Long id,
-        Long report_id,
-        Long assigned_to,
-        String destination,
+        Long reportId,
+        Long storeId,
+        Long assignedManagerId,
+        AlertDestination destination,
         String suggestion,
-        String urgency,
-        String status,
-        boolean reminder_sent,
-        OffsetDateTime created_at,
-        OffsetDateTime answered_at,
-        Date alert_date,
-        String alert_title,
+        AlertUrgency urgency,
+        AlertStatus status,
+        boolean reminderSent,
+        OffsetDateTime createdAt,
+        OffsetDateTime answeredAt,
+        LocalDateTime alertDate,
+        String alertTitle,
         boolean confirmed,
         String subtitle
 ) {
-    public AlertResponseDto(AlertEntity alert) {
-        this(
-                alert.getId(),
-                alert.getReport().getId(),
-                alert.getAssignedTo() != null ? alert.getAssignedTo().getId() : null,
-                alert.getDestination().name(),
-                alert.getSuggestion(),
-                alert.getUrgency().name(),
-                alert.getStatus().name(),
-                alert.isReminderSent(),
-                alert.getCreatedAt(),
-                alert.getAnsweredAt(),
-                Date.valueOf(alert.getAlertDate().toLocalDate()),
-                alert.getAlertTitle(),
-                alert.isConfirmed(),
-                alert.getSubtitle()
-        );
+    public static AlertResponseDto from(AlertEntity a) {
+        return new AlertResponseDto(
+                a.getId(),
+                a.getReport().getId(),      // getId() em proxy LAZY não dispara SELECT
+                a.getStore().getId(),
+                a.getAssignedTo() != null ? a.getAssignedTo().getId() : null,
+                a.getDestination(),
+                a.getSuggestion(),
+                a.getUrgency(),
+                a.getStatus(),
+                a.isReminderSent(),
+                a.getCreatedAt(),
+                a.getAnsweredAt(),
+                a.getAlertDate(),
+                a.getAlertTitle(),
+                a.isConfirmed(),
+                a.getSubtitle());
     }
 }

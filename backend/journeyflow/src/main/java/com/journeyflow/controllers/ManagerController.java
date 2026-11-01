@@ -1,15 +1,18 @@
 package com.journeyflow.controllers;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import com.journeyflow.dto.Common.PageResponseDto;
 import com.journeyflow.dto.Manager.ManagerCreateRequestDto;
 import com.journeyflow.dto.Manager.ManagerResponseDto;
 import com.journeyflow.dto.Manager.ManagerUpdateRequestDto;
 import com.journeyflow.services.ManagerService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/manager")
@@ -24,9 +27,12 @@ public class ManagerController {
         return managerService.createManager(request);
     }
 
+    /** GET /manager?storeId=1&page=0&size=20 (ordenado por nome). */
     @GetMapping
-    public List<ManagerResponseDto> findAll() {
-        return managerService.findAllManagers();
+    public PageResponseDto<ManagerResponseDto> findAll(
+            @RequestParam(required = false) Long storeId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return managerService.findManagers(storeId, pageable);
     }
 
     @GetMapping("/{id}")

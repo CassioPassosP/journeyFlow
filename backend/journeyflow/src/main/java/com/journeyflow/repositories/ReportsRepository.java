@@ -14,4 +14,6 @@ public interface ReportsRepository extends JpaRepository<ReportsEntity, Long> {
     Page<ReportsEntity> findByEmployeeId(UUID employeeId, Pageable pageable);
 
     Page<ReportsEntity> findByStatus(ReportStatus status, Pageable pageable);
+
+    Page<ReportsEntity> findByEmployeeIdAndStatus(UUID employeeId, ReportStatus status, Pageable pageable);
 }

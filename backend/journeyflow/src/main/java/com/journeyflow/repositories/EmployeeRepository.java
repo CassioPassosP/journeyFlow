@@ -1,5 +1,6 @@
 package com.journeyflow.repositories;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -9,6 +10,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.journeyflow.models.EmployeeEntity;
 
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> {
+
+    Optional<EmployeeEntity> findByEmailIgnoreCase(String email);
 
     boolean existsByEmailIgnoreCase(String email);
 

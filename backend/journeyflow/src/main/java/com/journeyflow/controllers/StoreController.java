@@ -1,16 +1,17 @@
 package com.journeyflow.controllers;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
 import com.journeyflow.dto.Store.StoreCreateRequestDto;
 import com.journeyflow.dto.Store.StoreResponseDto;
 import com.journeyflow.dto.Store.StoreUpdateRequestDto;
 import com.journeyflow.services.StoreService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/store")
@@ -36,7 +37,7 @@ public class StoreController {
     }
 
     @PutMapping("/{id}")
-    public Optional<StoreResponseDto> update(@PathVariable Long id, @Valid @RequestBody StoreUpdateRequestDto request) {
+    public StoreResponseDto update(@PathVariable Long id, @Valid @RequestBody StoreUpdateRequestDto request) {
         return storeService.updateStore(id, request);
     }
 
