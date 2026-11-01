@@ -52,7 +52,6 @@ public class EmployeeService {
         employee.setEmail(email);
         employee.setPassword(passwordEncoder.encode(dto.password()));
         employee.setPosition(dto.position().trim());
-        employee.setInitiationDate(dto.initiationDate());
         employee.setStartDate(dto.startDate());
         employee.setCurrentState(dto.currentState().trim());
         employee.setInLearningPath(Boolean.TRUE.equals(dto.inLearningPath()));
@@ -81,7 +80,6 @@ public class EmployeeService {
         employee.setName(dto.name().trim());
         employee.setEmail(email);
         employee.setPosition(dto.position().trim());
-        employee.setInitiationDate(dto.initiationDate());
         employee.setStartDate(dto.startDate());
         employee.setCurrentState(dto.currentState().trim());
         employee.setInLearningPath(Boolean.TRUE.equals(dto.inLearningPath()));

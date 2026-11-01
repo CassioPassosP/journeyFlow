@@ -25,7 +25,7 @@ public class StoreEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nome_loja", nullable = false)
+    @Column(name = "name", nullable = false)
     private String storeName;
 
     @Column(name = "data_criacao", nullable = false)

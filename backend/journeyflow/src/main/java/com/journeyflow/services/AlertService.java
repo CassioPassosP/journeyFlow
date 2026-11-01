@@ -24,6 +24,7 @@ import com.journeyflow.models.ReportsEntity;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.models.enums.AlertStatus;
 import com.journeyflow.repositories.AlertRepository;
+import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.ManagerRepository;
 import com.journeyflow.repositories.ReportsRepository;
 import com.journeyflow.repositories.StoreRepository;
@@ -38,6 +39,7 @@ public class AlertService {
 
     private final AlertRepository alertRepository;
     private final ReportsRepository reportsRepository;
+    private final EmployeeRepository employeeRepository;
     private final ManagerRepository managerRepository;
     private final StoreRepository storeRepository;
     private final Clock clock;
@@ -152,9 +154,11 @@ public class AlertService {
 
     /** A loja do alerta deve ser a loja do colaborador que fez o relato. */
     private void assertReportBelongsToStore(ReportsEntity report, StoreEntity store) {
-        EmployeeEntity employee = report.getEmployee();
+        EmployeeEntity employee = employeeRepository.findById(report.getEmployeeId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Funcionário do relato não encontrado"));
 
-        if (employee == null || !store.getId().equals(employee.getStore().getId())) {
+        if (!store.getId().equals(employee.getStore().getId())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "A loja informada não é a loja do colaborador que fez o relato");
         }

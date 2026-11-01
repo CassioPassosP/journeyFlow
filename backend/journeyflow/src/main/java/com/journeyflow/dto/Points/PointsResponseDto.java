@@ -13,6 +13,11 @@ public record PointsResponseDto(
         OffsetDateTime createdAt
 ) {
     public static PointsResponseDto from(PointsEntity p) {
-        return new PointsResponseDto(p.getId(), p.getEmployee().getId(), p.getReason(), p.getPoints(), p.getCreatedAt());
+        return new PointsResponseDto(
+                p.getId(),
+                p.getEmployee() == null ? null : p.getEmployee().getId(),
+                p.getReason(),
+                p.getPoints(),
+                p.getCreatedAt());
     }
 }

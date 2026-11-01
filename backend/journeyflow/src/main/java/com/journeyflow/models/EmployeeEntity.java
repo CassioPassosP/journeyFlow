@@ -25,9 +25,6 @@ public class EmployeeEntity extends PatternWorkerEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "data_inicio_contrato", nullable = false)
-    private LocalDate initiationDate;
-
     @Column(name = "current_state", nullable = false)
     private String currentState;
 

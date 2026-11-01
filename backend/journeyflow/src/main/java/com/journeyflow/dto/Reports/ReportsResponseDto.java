@@ -24,7 +24,7 @@ public record ReportsResponseDto(
     public static ReportsResponseDto from(ReportsEntity r) {
         return new ReportsResponseDto(
                 r.getId(),
-                r.getEmployee() != null ? r.getEmployee().getId() : null,
+                r.getEmployeeId(),
                 r.getOriginalText(),
                 r.getEditedText(),
                 r.getSummary(),

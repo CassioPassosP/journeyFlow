@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -22,9 +23,8 @@ public class ReportsEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
  
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", nullable = false)
-    private EmployeeEntity employee;
+    @Column(name = "employee_id", nullable = false)
+    private UUID employeeId;
  
     @Column(name = "original_text", nullable = false)
     private String originalText;
@@ -57,4 +57,3 @@ public class ReportsEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 }
-

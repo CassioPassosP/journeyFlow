@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record ReportsUpdateRequestDto(
-        @NotNull UUID employee,
+        @NotNull UUID employeeId,
         @NotBlank String originalText,
         @NotBlank String editedText,
         String summary,

@@ -43,7 +43,7 @@ public class ReportsService {
         EmployeeEntity employee = findEmployee(dto.employeeId());
 
         ReportsEntity report = new ReportsEntity();
-        report.setEmployee(employee);
+        report.setEmployeeId(employee.getId());
         report.setOriginalText(dto.originalText());
         report.setEditedText(dto.editedText() == null || dto.editedText().isBlank()
                 ? dto.originalText()
@@ -60,9 +60,9 @@ public class ReportsService {
     @Transactional
     public ReportsResponseDto updateReport(Long id, ReportsUpdateRequestDto dto) {
         ReportsEntity report = findReport(id);
-        EmployeeEntity employee = findEmployee(dto.employee());
+        EmployeeEntity employee = findEmployee(dto.employeeId());
 
-        report.setEmployee(employee);
+        report.setEmployeeId(employee.getId());
         report.setOriginalText(dto.originalText());
         report.setEditedText(dto.editedText());
         report.setSummary(dto.summary());
