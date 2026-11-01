@@ -1,16 +1,20 @@
 package com.journeyflow.models;
 
-import jakarta.persistence.*;
-
 import java.time.OffsetDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-@Setter
+@Setter 
 @MappedSuperclass
 public abstract class PatternWorkerEntity {
 
@@ -21,9 +25,10 @@ public abstract class PatternWorkerEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "email",nullable = false)
+    @Column(name = "email", nullable = false)
     private String email;
 
+    /** Sempre o hash BCrypt, nunca a senha em texto puro. */
     @Column(name = "password_hash", nullable = false)
     private String password;
 
@@ -32,6 +37,6 @@ public abstract class PatternWorkerEntity {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
     private OffsetDateTime createdAt;
 }
-

@@ -1,25 +1,34 @@
 package com.journeyflow.models;
 
-import jakarta.persistence.*;
-import lombok.*;
-
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Date;
 import java.util.UUID;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 @Entity
-@Data @NoArgsConstructor @AllArgsConstructor @EqualsAndHashCode(callSuper = true)
+@Getter @Setter
+@NoArgsConstructor @AllArgsConstructor
 @Table(name = "employee")
-public class EmployeeEntity extends PatternWorkerEntity{
+public class EmployeeEntity extends PatternWorkerEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "data_inicio_contrato", nullable = false)
-    private Date initiationDate;
+    private LocalDate initiationDate;
 
-    @Column(name = "current_State", nullable = false)
+    @Column(name = "current_state", nullable = false)
     private String currentState;
 
     @Column(name = "in_learning_path", nullable = false)
@@ -32,7 +41,7 @@ public class EmployeeEntity extends PatternWorkerEntity{
     private OffsetDateTime registerDate;
 
     @Column(name = "start_date", nullable = false)
-    private Date startDate;
+    private LocalDate startDate;
 
     @Column(name = "consent")
     private boolean consent;
@@ -44,6 +53,22 @@ public class EmployeeEntity extends PatternWorkerEntity{
     private int streak;
 
     @Column(name = "last_active", nullable = false)
-    private Date lastActive;
+    private LocalDate lastActive;
 }
 
+/*
+ * MELHORIAS:
+ *  - @GeneratedValue(IDENTITY) não funciona com UUID (IDENTITY é para colunas auto-incrementais).
+ *    Agora GenerationType.UUID (JPA 3.1).
+ *  - java.util.Date -> LocalDate nas colunas DATE (a lógica de streak/liberação de pílulas depende disso).
+ *  - @Data + @EqualsAndHashCode(callSuper = true) removidos: o pai não implementa equals/hashCode e
+ *    @Data em entidade com associação LAZY pode disparar carregamento ao chamar toString/hashCode.
+ *  - "current_State" -> "current_state".
+ */
+
+/**
+ * employee.points_id / messages_id / pills_id existem no banco com a FK invertida
+ * (colaborador -> 1 registro filho). O lado "muitos" correto fica nas tabelas filhas
+ * (points_log, messages, pill_progress), que apontam para o colaborador via @ManyToOne.
+ * Aquelas tres colunas deixam de ser mapeadas.
+ */
