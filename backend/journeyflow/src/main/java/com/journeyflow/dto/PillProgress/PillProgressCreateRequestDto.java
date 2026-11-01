@@ -1,8 +1,8 @@
 package com.journeyflow.dto.PillProgress;
 
-import jakarta.validation.constraints.NotNull;
-
 import java.util.UUID;
+
+import jakarta.validation.constraints.NotNull;
 
 public record PillProgressCreateRequestDto(
         @NotNull UUID employeeId,

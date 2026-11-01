@@ -1,9 +1,12 @@
 package com.journeyflow.dto.Reports;
 
-import com.journeyflow.models.ReportsEntity;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import com.journeyflow.models.ReportsEntity;
+import com.journeyflow.models.enums.ContentSource;
+import com.journeyflow.models.enums.ReportKind;
+import com.journeyflow.models.enums.ReportStatus;
 
 public record ReportsResponseDto(
         Long id,
@@ -12,25 +15,24 @@ public record ReportsResponseDto(
         String editedText,
         String summary,
         String topic,
-        String kind,
-        String source,
-        String status,
+        ReportKind kind,
+        ContentSource source,
+        ReportStatus status,
         boolean helpRequest,
         OffsetDateTime createdAt
 ) {
-    public ReportsResponseDto(ReportsEntity report) {
-        this(
-                report.getId(),
-                report.getEmployee().getId(),
-                report.getOriginalText(),
-                report.getEditedText(),
-                report.getSummary(),
-                report.getTopic(),
-                report.getKind() != null ? report.getKind().name() : null,
-                report.getSource().name(),
-                report.getStatus().name(),
-                report.isHelpRequest(),
-                report.getCreatedAt()
-        );
+    public static ReportsResponseDto from(ReportsEntity r) {
+        return new ReportsResponseDto(
+                r.getId(),
+                r.getEmployee() != null ? r.getEmployee().getId() : null,
+                r.getOriginalText(),
+                r.getEditedText(),
+                r.getSummary(),
+                r.getTopic(),
+                r.getKind(),
+                r.getSource(),
+                r.getStatus(),
+                r.isHelpRequest(),
+                r.getCreatedAt());
     }
 }

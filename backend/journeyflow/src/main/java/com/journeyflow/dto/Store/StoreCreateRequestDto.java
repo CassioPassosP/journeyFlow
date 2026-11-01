@@ -1,10 +1,8 @@
 package com.journeyflow.dto.Store;
 
 import jakarta.validation.constraints.NotBlank;
-
-import java.util.Date;
+import jakarta.validation.constraints.Size;
 
 public record StoreCreateRequestDto(
-        @NotBlank String storeName,
-        Date creationDate
+        @NotBlank @Size(max = 150) String storeName
 ) {}

@@ -1,24 +1,18 @@
 package com.journeyflow.dto.Points;
 
-import com.journeyflow.models.EmployeeEntity;
-import com.journeyflow.models.PointsEntity;
-
 import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import com.journeyflow.models.PointsEntity;
 
 public record PointsResponseDto(
         Long id,
-        EmployeeEntity employee,
+        UUID employeeId,
         String reason,
         Integer points,
         OffsetDateTime createdAt
 ) {
-    public PointsResponseDto(PointsEntity pointsEntity) {
-        this(
-                pointsEntity.getId(),
-                pointsEntity.getEmployee(),
-                pointsEntity.getReason(),
-                pointsEntity.getPoints(),
-                pointsEntity.getCreatedAt()
-        );
+    public static PointsResponseDto from(PointsEntity p) {
+        return new PointsResponseDto(p.getId(), p.getEmployee().getId(), p.getReason(), p.getPoints(), p.getCreatedAt());
     }
 }

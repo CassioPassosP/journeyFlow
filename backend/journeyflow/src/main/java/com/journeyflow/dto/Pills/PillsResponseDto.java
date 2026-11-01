@@ -6,20 +6,19 @@ public record PillsResponseDto(
         Long id,
         String title,
         String content,
-        Integer day_from,
-        String quiz_question,
-        String quiz_options,
-        Integer quiz_correct
+        Integer dayFrom,
+        String quizQuestion,
+        String quizOptions,
+        Integer quizCorrect
 ) {
-    public PillsResponseDto(PillsEntity pill) {
-        this(
-                pill.getId(),
-                pill.getTitle(),
-                pill.getContent(),
-                pill.getDay_from(),
-                pill.getQuiz_question(),
-                pill.getQuiz_options(),
-                pill.getQuiz_correct()
-        );
+    public static PillsResponseDto from(PillsEntity p) {
+        return new PillsResponseDto(
+                p.getId(),
+                p.getTitle(),
+                p.getContent(),
+                p.getDay_from(),
+                p.getQuiz_question(),
+                p.getQuiz_options(),
+                p.getQuiz_correct());
     }
 }

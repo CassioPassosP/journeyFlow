@@ -1,19 +1,19 @@
 package com.journeyflow.dto.Store;
 
-import com.journeyflow.models.StoreEntity;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
-import java.util.Date;
+import com.journeyflow.models.StoreEntity;
 
 public record StoreResponseDto(
         Long id,
         String storeName,
-        Date creationDate
+        LocalDateTime creationDate
 ) {
-    public StoreResponseDto(StoreEntity store) {
-        this(
-                store.getId(),
-                store.getStoreName(),
-                store.getCreationDate()
-        );
+    public static StoreResponseDto from(StoreEntity store) {
+        LocalDateTime creationDate = store.getCreationDate().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+        return new StoreResponseDto(store.getId(), store.getStoreName(), creationDate);
     }
 }

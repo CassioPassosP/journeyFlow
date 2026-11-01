@@ -2,12 +2,14 @@ package com.journeyflow.dto.Pills;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 
 public record PillsCreateRequestDto(
-        @NotBlank String title,
+        @NotBlank @Size(max = 200) String title,
         @NotBlank String content,
-        @NotNull Integer day_from,
-        @NotBlank String quiz_question,
-        @NotBlank String quiz_options,
-        @NotNull Integer quiz_correct
+        @NotNull @PositiveOrZero Integer dayFrom,
+        @NotBlank String quizQuestion,
+        @NotBlank String quizOptions,
+        @NotNull @PositiveOrZero Integer quizCorrect
 ) {}

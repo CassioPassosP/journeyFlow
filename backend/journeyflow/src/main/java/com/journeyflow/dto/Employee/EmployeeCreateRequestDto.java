@@ -1,33 +1,26 @@
 package com.journeyflow.dto.Employee;
 
-import com.journeyflow.models.ChatEntity;
-import com.journeyflow.models.PillsEntity;
-import com.journeyflow.models.PointsEntity;
-import com.journeyflow.models.StoreEntity;
+import java.time.LocalDate;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
-import java.time.OffsetDateTime;
-import java.util.Date;
+import jakarta.validation.constraints.Size;
 
 public record EmployeeCreateRequestDto(
-        @NotNull StoreEntity store,
-        @NotBlank String name,
-        @NotBlank @Email String email,
-        @NotBlank String password,
-        @NotBlank String position,
-        PointsEntity points,
-        ChatEntity messages,
-        PillsEntity pilss,
-        @NotNull Date initiationDate,
-        @NotBlank String currentState,
-        boolean inLearningPath,
-        OffsetDateTime lastInteraction,
-        OffsetDateTime registerDate,
-        @NotNull Date startDate,
-        boolean consent,
-        OffsetDateTime consentAt,
-        int streak,
-        @NotNull Date lastActive
-) {}
+        @NotNull Long storeId,
+        @NotBlank @Size(max = 150) String name,
+        @NotBlank @Email @Size(max = 254) String email,
+        @NotBlank @Size(min = 8, max = 72) String password,
+        @NotBlank @Size(max = 100) String position,
+        @NotNull LocalDate initiationDate,
+        @NotNull LocalDate startDate,
+        @NotBlank @Size(max = 50) String currentState,
+        @NotNull Boolean inLearningPath,
+        @NotNull Boolean consent
+) {
+    @Override
+    public String toString() {
+        return "EmployeeCreateRequestDto[storeId=%s, name=%s, email=%s, password=***]".formatted(storeId, name, email);
+    }
+}

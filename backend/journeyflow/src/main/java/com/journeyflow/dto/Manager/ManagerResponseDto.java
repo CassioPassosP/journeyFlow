@@ -1,26 +1,24 @@
 package com.journeyflow.dto.Manager;
 
-import com.journeyflow.models.ManagerEntity;
-import com.journeyflow.models.StoreEntity;
-
 import java.time.OffsetDateTime;
+
+import com.journeyflow.models.ManagerEntity;
 
 public record ManagerResponseDto(
         Long id,
-        StoreEntity store,
+        Long storeId,
         String name,
         String email,
         String position,
         OffsetDateTime createdAt
 ) {
-    public ManagerResponseDto(ManagerEntity manager) {
-        this(
+    public static ManagerResponseDto from(ManagerEntity manager) {
+        return new ManagerResponseDto(
                 manager.getId(),
-                manager.getStore(),
+                manager.getStore().getId(),
                 manager.getName(),
                 manager.getEmail(),
                 manager.getPosition(),
-                manager.getCreatedAt()
-        );
+                manager.getCreatedAt());
     }
 }
