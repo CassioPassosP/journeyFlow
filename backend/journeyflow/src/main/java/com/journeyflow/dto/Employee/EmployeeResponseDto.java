@@ -1,10 +1,7 @@
 package com.journeyflow.dto.Employee;
 
 import java.time.LocalDate;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.UUID;
 
 import com.journeyflow.models.EmployeeEntity;
@@ -35,21 +32,15 @@ public record EmployeeResponseDto(
                 e.getEmail(),
                 e.getPosition(),
                 e.getCreatedAt(),
-                toLocalDate(e.getInitiationDate()),
+                e.getInitiationDate(),
                 e.getCurrentState(),
                 e.isInLearningPath(),
                 e.getLastInteraction(),
                 e.getRegisterDate(),
-                toLocalDate(e.getStartDate()),
+                e.getStartDate(),
                 e.isConsent(),
                 e.getConsentAt(),
                 e.getStreak(),
-                toLocalDate(e.getLastActive()));
-    }
-
-    private static LocalDate toLocalDate(Date date) {
-        return date == null ? null : Instant.ofEpochMilli(date.getTime())
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
+                e.getLastActive());
     }
 }
