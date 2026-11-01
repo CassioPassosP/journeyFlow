@@ -1,7 +1,15 @@
 package com.journeyflow.repositories;
 
-import com.journeyflow.models.AlertEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.journeyflow.models.AlertEntity;
+import com.journeyflow.models.enums.AlertStatus;
+
 public interface AlertRepository extends JpaRepository<AlertEntity, Long> {
+
+    Page<AlertEntity> findByStoreId(Long storeId, Pageable pageable);
+
+    Page<AlertEntity> findByStoreIdAndStatus(Long storeId, AlertStatus status, Pageable pageable);
 }

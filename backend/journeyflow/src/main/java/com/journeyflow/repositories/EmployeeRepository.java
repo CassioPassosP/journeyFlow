@@ -1,11 +1,18 @@
 package com.journeyflow.repositories;
 
-import com.journeyflow.models.EmployeeEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.journeyflow.models.EmployeeEntity;
+
 public interface EmployeeRepository extends JpaRepository<EmployeeEntity, UUID> {
-    Optional<EmployeeEntity> findByEmail(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, UUID id);
+
+    Page<EmployeeEntity> findByStoreId(Long storeId, Pageable pageable);
 }

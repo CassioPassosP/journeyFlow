@@ -1,10 +1,16 @@
 package com.journeyflow.repositories;
 
-import com.journeyflow.models.ManagerEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.journeyflow.models.ManagerEntity;
 
 public interface ManagerRepository extends JpaRepository<ManagerEntity, Long> {
-    Optional<ManagerEntity> findByEmail(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
+
+    Page<ManagerEntity> findByStoreId(Long storeId, Pageable pageable);
 }
