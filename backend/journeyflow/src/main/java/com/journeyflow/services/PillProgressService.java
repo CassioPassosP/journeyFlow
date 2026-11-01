@@ -1,5 +1,13 @@
 package com.journeyflow.services;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.journeyflow.dto.PillProgress.PillProgressCreateRequestDto;
 import com.journeyflow.dto.PillProgress.PillProgressResponseDto;
 import com.journeyflow.dto.PillProgress.PillProgressUpdateRequestDto;
@@ -10,18 +18,15 @@ import com.journeyflow.models.PillsEntity;
 import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.PillProgressRepository;
 import com.journeyflow.repositories.PillsRepository;
-import jakarta.transaction.Transactional;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
+/**
+ * Progresso = "colaborador X concluiu a pílula Y". A chave é composta (user_id, pill_id),
+ * e a conclusão é registrada uma única vez (409 se repetir).
+ */
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class PillProgressService {
 
     private final PillProgressRepository pillProgressRepository;
@@ -32,112 +37,89 @@ public class PillProgressService {
     public PillProgressResponseDto createProgress(PillProgressCreateRequestDto dto) {
         EmployeeEntity employee = findEmployee(dto.employeeId());
         PillsEntity pill = findPill(dto.pillId());
-        PillProgressId id = new PillProgressId(employee.getId(), pill.getId());
 
-        if (pillProgressRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Progresso da pilula ja existe");
+        if (pillProgressRepository.existsById(new PillProgressId(employee.getId(), pill.getId()))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Progresso da pílula já existe");
         }
-
-        return new PillProgressResponseDto(pillProgressRepository.save(newProgress(employee, pill)));
+        return save(employee, pill);
     }
 
+    /**
+     * Como a chave É o par (colaborador, pílula), "atualizar" significa mover o progresso para
+     * outro par: remove o registro atual e cria o novo (completedAt é reiniciado).
+     */
     @Transactional
-    public PillProgressResponseDto updateProgress(
-            UUID employeeId,
-            Long pillId,
-            @Valid PillProgressUpdateRequestDto dto
-    ) {
-        PillProgressId currentId = new PillProgressId(employeeId, pillId);
-        PillProgressEntity currentProgress = pillProgressRepository.findById(currentId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Progresso da pilula nao encontrado"
-                ));
+    public PillProgressResponseDto updateProgress(UUID employeeId, Long pillId, PillProgressUpdateRequestDto dto) {
+        PillProgressEntity current = findProgress(employeeId, pillId);
 
         EmployeeEntity newEmployee = findEmployee(dto.employeeId());
         PillsEntity newPill = findPill(dto.pillId());
         PillProgressId newId = new PillProgressId(newEmployee.getId(), newPill.getId());
 
-        if (currentId.equals(newId)) {
-            return new PillProgressResponseDto(currentProgress);
+        if (current.getId().equals(newId)) {
+            return PillProgressResponseDto.from(current);
         }
         if (pillProgressRepository.existsById(newId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Progresso de destino ja existe");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Progresso de destino já existe");
         }
 
-        pillProgressRepository.delete(currentProgress);
+        pillProgressRepository.delete(current);
         pillProgressRepository.flush();
 
-        return new PillProgressResponseDto(pillProgressRepository.save(newProgress(newEmployee, newPill)));
+        return save(newEmployee, newPill);
     }
 
     @Transactional
     public void deleteProgress(UUID employeeId, Long pillId) {
-        PillProgressId id = new PillProgressId(employeeId, pillId);
-        PillProgressEntity progress = pillProgressRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Progresso da pilula nao encontrado"
-                ));
-
-        pillProgressRepository.delete(progress);
+        pillProgressRepository.delete(findProgress(employeeId, pillId));
     }
 
-    @Transactional
-    public List<PillProgressResponseDto> findAllProgress() {
-        return pillProgressRepository.findAll()
-                .stream()
-                .map(PillProgressResponseDto::new)
-                .toList();
+    /** Com employeeId: pílulas concluídas por ele (mais recentes primeiro). Sem: todos os registros. */
+    @Transactional(readOnly = true)
+    public List<PillProgressResponseDto> findAllProgress(UUID employeeId) {
+        List<PillProgressEntity> result;
+
+        if (employeeId == null) {
+            result = pillProgressRepository.findAll();
+        } else {
+            if (!employeeRepository.existsById(employeeId)) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado");
+            }
+            result = pillProgressRepository.listByEmployeeId(employeeId);
+        }
+        return result.stream().map(PillProgressResponseDto::from).toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PillProgressResponseDto findProgressById(UUID employeeId, Long pillId) {
-        PillProgressId id = new PillProgressId(employeeId, pillId);
-        PillProgressEntity progress = pillProgressRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Progresso da pilula nao encontrado"
-                ));
+        return PillProgressResponseDto.from(findProgress(employeeId, pillId));
+    }
 
-        return new PillProgressResponseDto(progress);
+    // ---------------------------------------------------------------- helpers
+
+    private PillProgressEntity findProgress(UUID employeeId, Long pillId) {
+        return pillProgressRepository.findById(new PillProgressId(employeeId, pillId))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Progresso da pílula não encontrado"));
     }
 
     private EmployeeEntity findEmployee(UUID employeeId) {
-        if (employeeId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "ID do funcionario e obrigatorio");
-        }
         return employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Funcionario nao encontrado"
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
     }
 
     private PillsEntity findPill(Long pillId) {
-        if (pillId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "ID da pilula e obrigatorio");
-        }
         return pillsRepository.findById(pillId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Pilula nao encontrada"
-                ));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pílula não encontrada"));
     }
 
-    private PillProgressEntity newProgress(EmployeeEntity employee, PillsEntity pill) {
+    // saveAndFlush: a chave é atribuída (INSERT adiado), então forçamos o INSERT para ter completedAt preenchido.
+    private PillProgressResponseDto save(EmployeeEntity employee, PillsEntity pill) {
         PillProgressEntity progress = new PillProgressEntity();
         progress.setId(new PillProgressId(employee.getId(), pill.getId()));
         progress.setEmployee(employee);
         progress.setPill(pill);
-        return progress;
+
+        return PillProgressResponseDto.from(pillProgressRepository.saveAndFlush(progress));
     }
 }

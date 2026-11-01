@@ -1,16 +1,18 @@
 package com.journeyflow.controllers;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
 import com.journeyflow.dto.PillProgress.PillProgressCreateRequestDto;
 import com.journeyflow.dto.PillProgress.PillProgressResponseDto;
 import com.journeyflow.dto.PillProgress.PillProgressUpdateRequestDto;
 import com.journeyflow.services.PillProgressService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/pillprogress")
@@ -25,9 +27,10 @@ public class PillProgressController {
         return pillProgressService.createProgress(request);
     }
 
+    /** GET /pillprogress?employeeId=... lista só as pílulas concluídas por aquele colaborador. */
     @GetMapping
-    public List<PillProgressResponseDto> findAll() {
-        return pillProgressService.findAllProgress();
+    public List<PillProgressResponseDto> findAll(@RequestParam(required = false) UUID employeeId) {
+        return pillProgressService.findAllProgress(employeeId);
     }
 
     @GetMapping("/{employeeId}/{pillId}")

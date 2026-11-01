@@ -1,9 +1,10 @@
 package com.journeyflow.dto.Points;
 
-import com.journeyflow.models.EmployeeEntity;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record PointsUpdateRequestDto(
-        Long id,
-        EmployeeEntity employee,
-        Integer points
+        @NotBlank @Size(max = 200) String reason,
+        @NotNull Integer points
 ) {}

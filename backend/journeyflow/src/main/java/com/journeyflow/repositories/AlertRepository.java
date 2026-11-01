@@ -11,5 +11,7 @@ public interface AlertRepository extends JpaRepository<AlertEntity, Long> {
 
     Page<AlertEntity> findByStoreId(Long storeId, Pageable pageable);
 
+    Page<AlertEntity> findByStatus(AlertStatus status, Pageable pageable);
+
     Page<AlertEntity> findByStoreIdAndStatus(Long storeId, AlertStatus status, Pageable pageable);
 }
