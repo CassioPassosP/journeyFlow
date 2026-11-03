@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.journeyflow.dto.Alert.AlertAssignRequestDto;
+import com.journeyflow.dto.Alert.AlertConfirmedUpdateRequestDto;
 import com.journeyflow.dto.Alert.AlertCreateRequestDto;
 import com.journeyflow.dto.Alert.AlertResponseDto;
 import com.journeyflow.dto.Alert.AlertStatusUpdateRequestDto;
@@ -71,6 +72,14 @@ public class AlertService {
     public AlertResponseDto assignManager(Long id, AlertAssignRequestDto dto) {
         AlertEntity alert = findAlert(id);
         alert.setAssignedTo(findManagerOfStore(dto.managerId(), alert.getStore().getId()));
+
+        return AlertResponseDto.from(alert);
+    }
+
+    @Transactional
+    public AlertResponseDto updateConfirmed(Long id, AlertConfirmedUpdateRequestDto dto) {
+        AlertEntity alert = findAlert(id);
+        alert.setConfirmed(dto.confirmed());
 
         return AlertResponseDto.from(alert);
     }

@@ -16,18 +16,18 @@ public class PointsEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
- 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_uuid")
-    private EmployeeEntity employee;
- 
+
     @Column(name = "reason", nullable = false)
     private String reason;
- 
+
     @Column(name = "points", nullable = false)
     private Integer points;
- 
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", nullable = false)
+    private EmployeeEntity employee;
 }

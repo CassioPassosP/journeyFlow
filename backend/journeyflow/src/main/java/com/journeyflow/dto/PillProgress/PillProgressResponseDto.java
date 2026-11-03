@@ -11,6 +11,6 @@ public record PillProgressResponseDto(
         OffsetDateTime completedAt
 ) {
     public static PillProgressResponseDto from(PillProgressEntity p) {
-        return new PillProgressResponseDto(p.getId().getUserId(), p.getId().getPillId(), p.getCompletedAt());
+        return new PillProgressResponseDto(p.getId().getEmployeeId(), p.getId().getPillId(), p.getCompletedAt());
     }
 }

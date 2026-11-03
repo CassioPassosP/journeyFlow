@@ -28,6 +28,16 @@
   gap: var(--space-5);
 }
 
+.header__logout {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+}
+
 .header__notifications {
   position: relative;
   display: grid;

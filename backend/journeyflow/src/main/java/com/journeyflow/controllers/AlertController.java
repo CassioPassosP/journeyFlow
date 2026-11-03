@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import com.journeyflow.dto.Alert.AlertAssignRequestDto;
+import com.journeyflow.dto.Alert.AlertConfirmedUpdateRequestDto;
 import com.journeyflow.dto.Alert.AlertCreateRequestDto;
 import com.journeyflow.dto.Alert.AlertResponseDto;
 import com.journeyflow.dto.Alert.AlertStatusUpdateRequestDto;
@@ -47,6 +48,12 @@ public class AlertController {
     public AlertResponseDto updateStatus(@PathVariable Long id,
                                          @Valid @RequestBody AlertStatusUpdateRequestDto request) {
         return alertService.updateStatus(id, request);
+    }
+
+    @PatchMapping("/{id}/confirmed")
+    public AlertResponseDto updateConfirmed(@PathVariable Long id,
+                                            @Valid @RequestBody AlertConfirmedUpdateRequestDto request) {
+        return alertService.updateConfirmed(id, request);
     }
 
     @PatchMapping("/{id}/assign")

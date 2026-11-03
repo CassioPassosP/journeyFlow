@@ -141,22 +141,25 @@ export function renderEmployeesPage(container, employees, query = "", sorts = { 
   `;
 }
 
-export function renderEmployeeForm(container) {
+export function renderEmployeeForm(container, stores = [], defaultStoreId = "") {
   container.innerHTML = `
-    ${pageHeading("Cadastrar funcionário", "Preencha manualmente as informações para iniciar o acompanhamento dos primeiros 90 dias.", '<a href="#employees">Funcionários</a> &gt;')}
+    ${pageHeading("Cadastrar funcionário", "Cadastre os dados do funcionário e defina a senha que ele usará para acessar o JourneyFlow.", '<a href="#employees">Funcionários</a> &gt;')}
     <form class="employee-form" data-employee-form>
       <section class="form-section">
         <h2>Dados do funcionário</h2>
         <div class="form-grid form-grid--two">
           <label>Nome completo<input name="name" autocomplete="name" required></label>
-          <label>WhatsApp<input name="whatsapp" type="tel" autocomplete="tel" placeholder="(11) 99999-9999"></label>
+          <label>E-mail<input name="email" type="email" autocomplete="email" required></label>
+          <label>Senha inicial<input name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" required></label>
         </div>
       </section>
       <section class="form-section">
         <h2>Dados profissionais</h2>
         <div class="form-grid">
-          <label>Cargo / funcao<input name="role" required></label>
-          <label>Unidade<input name="unit" value="Loja Silva so - 1020" required></label>
+          <label>Cargo / função<input name="position" required></label>
+          <label>Unidade<select name="storeId" required>${stores.map((store) => `
+            <option value="${escapeHtml(store.id)}"${String(store.id) === String(defaultStoreId) ? " selected" : ""}>${escapeHtml(store.storeName)}</option>
+          `).join("")}</select></label>
           <label>Data de contratação<input name="hiredAt" type="date" required></label>
         </div>
       </section>
@@ -168,6 +171,8 @@ export function renderEmployeeForm(container) {
           <label><input type="radio" name="status" value="attention"><span><i class="status-dot status-dot--warning"></i>Atenção<small>Um olhar mais próximo na adaptação</small></span></label>
           <label><input type="radio" name="status" value="help"><span><i class="status-dot status-dot--danger"></i>Necessidade de acompanhamento<small>Apoio individual mais frequente</small></span></label>
         </div>
+        <label class="employee-form__checkbox"><input type="checkbox" name="inLearningPath" checked> Incluir na trilha de aprendizagem</label>
+        <label class="employee-form__checkbox"><input type="checkbox" name="consent"> Consentimento registrado para tratamento dos dados</label>
       </fieldset>
       <div class="form-actions"><a class="button button--muted" href="#employees">Cancelar</a><button class="button button--primary" type="submit">Cadastrar funcionário</button></div>
     </form>

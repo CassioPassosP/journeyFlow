@@ -11,13 +11,13 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.UUID;
 
-/** Chave composta (user_id, pill_id) de pill_progress, igual a PRIMARY KEY do banco. */
+/** Chave composta (employee_id, pill_id) de pill_progress, igual à PRIMARY KEY do banco. */
 @Embeddable
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @EqualsAndHashCode
 public class PillProgressId implements Serializable {
 
-    @Column(name = "user_id")
-    private UUID userId;
+    @Column(name = "employee_id")
+    private UUID employeeId;
 
     @Column(name = "pill_id")
     private Long pillId;

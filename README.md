@@ -34,15 +34,25 @@ docs/modelagem.md          Rascunho da modelagem do domínio
 
 ## Executar o frontend
 
-É necessário ter Python 3 instalado. Na raiz do repositório, inicie um servidor estático:
+É necessário ter Node.js 18 ou superior. O servidor de desenvolvimento serve os arquivos estáticos e encaminha `/__api/*` ao backend para evitar CORS sem alterar a configuração do Spring Boot.
 
-```bash
-python -m http.server 8000 --directory frontend
+No Windows PowerShell:
+
+```powershell
+cd frontend
+npm start
 ```
 
-Abra <http://localhost:8000> no navegador. Também é possível usar outra ferramenta de servidor estático, desde que a raiz servida seja a pasta `frontend`; abrir `index.html` diretamente pode impedir o carregamento dos módulos JavaScript.
+No macOS ou Linux:
 
-A interface usa dados demonstrativos definidos em `frontend/data/mock-data.js`. As interações e preferências são mantidas em memória ou no `localStorage` do navegador. Atualmente, o frontend não está integrado aos endpoints do backend.
+```bash
+cd frontend
+npm start
+```
+
+Abra <http://localhost:8000>. Se o backend estiver em outro endereço, defina `JOURNEYFLOW_API_URL` antes de iniciar o servidor (por padrão, `http://localhost:8080`).
+
+O login aceita contas de gestor e colaborador, autenticadas em `/auth/login`. O gestor cria a conta do colaborador em **Funcionários > Funcionário**, definindo e compartilhando com ele o e-mail e a senha inicial. O colaborador entra com essas credenciais; seu perfil, saldo/histórico de pontos, mensagens e progresso das pílulas de conhecimento são carregados pelos endpoints existentes. As pílulas são liberadas conforme o dia da jornada, e a conclusão é registrada ao acertar o questionário. O gestor também consome os endpoints de alertas, relatos, gerente e loja, e pode confirmar alertas. O token fica em `sessionStorage` e é encaminhado pelo proxy; não use este servidor de desenvolvimento como proxy público de produção. As recompensas ainda usam os dados demonstrativos de `frontend/data/mock-data.js`.
 
 ## Executar o backend
 
@@ -64,7 +74,7 @@ cd backend/journeyflow
 ./mvnw spring-boot:run
 ```
 
-A aplicação Spring Boot usa a porta padrão `8080`. A configuração atual de segurança exige autenticação nas rotas, exceto em `/auth/**`; os controllers disponíveis ainda não declaram operações HTTP. Portanto, o backend é uma base em desenvolvimento, e a interface demonstrativa não depende dele.
+A aplicação Spring Boot usa a porta padrão `8080`. As rotas do backend exigem autenticação JWT, exceto `/auth/**`. Faça login com uma conta de gerente cadastrada para abrir o painel integrado.
 
 ## Testes
 

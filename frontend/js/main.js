@@ -1,4 +1,12 @@
-import { getDashboardData } from "./services/data-service.js";
+import {
+  confirmAlert,
+  completePill,
+  createEmployee,
+  getDashboardData,
+  loginAndLoadDashboard,
+  sendEmployeeMessage
+} from "./services/data-service.js";
+import { clearSession, getSession } from "./services/api-client.js";
 import { renderSidebar } from "./components/sidebar.js";
 import { renderHeader } from "./components/header.js";
 import { renderSummaryCards } from "./components/summary-cards.js";
@@ -87,7 +95,7 @@ function renderPage() {
   } else if (page === "settings") {
     renderSettingsPage(mainContent, data.user, theme);
   } else if (page === "employees" && detail === "new") {
-    renderEmployeeForm(mainContent);
+    renderEmployeeForm(mainContent, data.stores, data.currentManager.storeId);
   } else if (page === "employees" && detail) {
     const employee = data.employees.find((item) => item.id === detail);
     if (employee) {
@@ -114,8 +122,59 @@ function rerenderCurrentPage() {
   renderPage();
 }
 
+function showLogin(errorMessage = "") {
+  document.querySelector(".app-layout").hidden = true;
+  const loginScreen = document.querySelector("#login-screen");
+  const error = loginScreen.querySelector("[data-login-error]");
+  error.textContent = errorMessage;
+  error.hidden = !errorMessage;
+  loginScreen.hidden = false;
+}
+
+function showPageError(message) {
+  const mainContent = document.querySelector("#main-content");
+  mainContent.querySelector("[data-api-error]")?.remove();
+  const error = document.createElement("p");
+  error.className = "dashboard-error";
+  error.setAttribute("role", "alert");
+  error.dataset.apiError = "";
+  error.textContent = message;
+  mainContent.prepend(error);
+}
+
+async function reloadDashboard() {
+  data = await getDashboardData(getSession());
+  renderPage();
+}
+
+function showApplication() {
+  document.querySelector("#login-screen").hidden = true;
+  document.querySelector(".app-layout").hidden = false;
+}
+
+function setRouteForRole(role) {
+  const isEmployeeRoute = window.location.hash.startsWith("#employee/");
+  if (role === "EMPLOYEE" && !isEmployeeRoute) {
+    window.location.hash = "#employee/home";
+  } else if (role === "MANAGER" && isEmployeeRoute) {
+    window.location.hash = "#dashboard";
+  }
+}
+
+async function submitEmployeeMessage(content) {
+  try {
+    await sendEmployeeMessage(data.currentEmployee.id, content);
+    data = await getDashboardData(getSession());
+    employeeNotice = "Mensagem enviada.";
+    renderPage();
+  } catch (error) {
+    showPageError(error.message);
+  }
+}
+
 window.addEventListener("hashchange", () => {
   if (!data) return;
+  setRouteForRole(getSession()?.role);
   notificationsOpen = false;
   renderPage();
   window.scrollTo(0, 0);
@@ -138,7 +197,13 @@ document.addEventListener("input", (event) => {
   }
 });
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
+  if (event.target.closest("[data-logout]")) {
+    clearSession();
+    data = undefined;
+    showLogin();
+    return;
+  }
   if (notificationsOpen && !event.target.closest(".notification-popover, [data-toggle-notifications]")) {
     notificationsOpen = false;
     renderHeader(document.querySelector("#header"), data, {
@@ -161,30 +226,7 @@ document.addEventListener("click", (event) => {
   const employeeAction = event.target.closest("[data-employee-action]");
   if (employeeAnswer || employeeAction) {
     const text = employeeAnswer?.dataset.employeeAnswer || employeeAction.dataset.employeeAction.replace(/^[^ ]+\s/, "");
-    const normalizedText = text.toLocaleLowerCase("pt-BR");
-    const isSuggestion = normalizedText.includes("sugest");
-    const isExperience = normalizedText.includes("experiência");
-    const isWorkReflection = normalizedText.includes("dificuldade") || normalizedText.includes("facilidade");
-    const points = isSuggestion ? 0 : isExperience || isWorkReflection ? 20 : 10;
-    const now = new Date();
-    const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    const date = now.toLocaleDateString("pt-BR");
-    data.employee.points += points;
-    data.employee.chat.push({ author: "employee", text, time });
-    data.employee.chat.push({ author: "bot", text: "Obrigado por compartilhar! Sua participação ajuda a tornar nosso ambiente cada vez melhor. ✨", time });
-    if (!isSuggestion) {
-      data.employee.history.unshift({
-        id: `history-${Date.now()}`,
-        emoji: isExperience ? "⭐" : isWorkReflection ? "🧭" : "🗨️",
-        label: isExperience ? "Compartilhou uma experiência" : isWorkReflection ? "Compartilhou sobre sua função" : "Respondeu pergunta da conversa",
-        date: `${date} ${time}`,
-        points
-      });
-    }
-    employeeNotice = points > 0
-      ? `Você ganhou ${points} pontos. Obrigado por participar!`
-      : "Obrigado por enviar sua sugestão. Ela ajuda a melhorar nosso ambiente.";
-    rerenderCurrentPage();
+    await submitEmployeeMessage(text);
   }
   const redeemButton = event.target.closest("[data-redeem-reward]");
   if (redeemButton) {
@@ -252,10 +294,13 @@ document.addEventListener("click", (event) => {
   }
   const confirmButton = event.target.closest("[data-confirm-alert]");
   if (confirmButton) {
-    const alert = data.alerts.find((item) => item.id === confirmButton.dataset.confirmAlert);
-    if (alert) {
-      alert.confirmed = true;
-      rerenderCurrentPage();
+    confirmButton.disabled = true;
+    try {
+      await confirmAlert(confirmButton.dataset.confirmAlert);
+      await reloadDashboard();
+    } catch (error) {
+      confirmButton.disabled = false;
+      showPageError(error.message);
     }
   }
   if (event.target.closest("[data-clear-filters]")) {
@@ -291,26 +336,76 @@ document.addEventListener("close", (event) => {
   rerenderCurrentPage();
 }, true);
 
-document.addEventListener("submit", (event) => {
+document.addEventListener("submit", async (event) => {
+  const loginForm = event.target.closest("[data-login-form]");
+  if (loginForm) {
+    event.preventDefault();
+    const button = loginForm.querySelector('button[type="submit"]');
+    const values = new FormData(loginForm);
+    button.disabled = true;
+    try {
+      data = await loginAndLoadDashboard(
+        String(values.get("email")).trim(),
+        String(values.get("password"))
+      );
+      setRouteForRole(getSession().role);
+      const settings = loadUserSettings(data.user);
+      data.user.name = settings.name;
+      data.user.email = settings.email;
+      theme = settings.theme;
+      document.documentElement.dataset.theme = theme;
+      readNotifications = loadReadNotifications();
+      showApplication();
+      renderPage();
+    } catch (error) {
+      clearSession();
+      showLogin(error.status === 403
+        ? "Credenciais inválidas. Confira o e-mail e a senha e tente novamente."
+        : error.message);
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+
   const chatForm = event.target.closest("[data-employee-chat-form]");
   if (chatForm) {
     event.preventDefault();
     const input = chatForm.elements.message;
     const text = input.value.trim();
     if (!text) return;
-    const now = new Date();
-    const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    data.employee.chat.push({ author: "employee", text, time });
-    data.employee.chat.push({ author: "bot", text: "Obrigado por compartilhar sua ideia! Sua participação ajuda a melhorar nosso ambiente. 💛", time });
-    data.employee.history.unshift({
-      id: `history-${Date.now()}`,
-      emoji: "🗨️",
-      label: "Compartilhou uma mensagem na conversa",
-      date: `${now.toLocaleDateString("pt-BR")} ${time}`,
-      points: 0
-    });
-    employeeNotice = "Obrigado por participar da conversa e compartilhar sua ideia.";
-    rerenderCurrentPage();
+    await submitEmployeeMessage(text);
+    return;
+  }
+  const pillQuiz = event.target.closest("[data-pill-quiz]");
+  if (pillQuiz) {
+    event.preventDefault();
+    const feedback = pillQuiz.querySelector("[data-pill-feedback]");
+    const answer = new FormData(pillQuiz).get("answer");
+    if (answer === null) {
+      feedback.textContent = "Selecione uma resposta antes de continuar.";
+      feedback.hidden = false;
+      return;
+    }
+    if (Number(answer) !== Number(pillQuiz.dataset.correctAnswer)) {
+      feedback.textContent = "Essa resposta não está correta. Revise o conteúdo e tente novamente.";
+      feedback.hidden = false;
+      return;
+    }
+    const button = pillQuiz.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      await completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz));
+      data = await getDashboardData(getSession());
+      employeeNotice = "Resposta correta! Pílula concluída.";
+      renderPage();
+    } catch (error) {
+      button.disabled = false;
+      feedback.textContent = error.status === 409
+        ? "Esta pílula já consta como concluída. Atualize a tela para ver seu progresso."
+        : error.message;
+      feedback.hidden = false;
+    }
     return;
   }
   const profileForm = event.target.closest("[data-profile-form]");
@@ -348,24 +443,38 @@ document.addEventListener("submit", (event) => {
   if (!form) return;
   event.preventDefault();
   const values = new FormData(form);
-  const name = String(values.get("name")).trim();
   const hiredAt = String(values.get("hiredAt"));
-  const days = Math.max(0, Math.floor((Date.now() - new Date(`${hiredAt}T00:00:00`).getTime()) / 86400000));
-  const id = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const employeeId = `${id}-${Date.now().toString(36)}`;
-  const employee = {
-    id: employeeId,
-    name,
-    role: String(values.get("role")).trim(),
-    whatsapp: String(values.get("whatsapp")).trim(),
-    unit: String(values.get("unit")).trim(),
-    hiredAt,
-    days,
-    status: String(values.get("status")),
-    interaction: "Agora"
+  const status = String(values.get("status") || "normal");
+  const payload = {
+    storeId: Number(values.get("storeId")),
+    name: String(values.get("name")).trim(),
+    email: String(values.get("email")).trim(),
+    password: String(values.get("password")),
+    position: String(values.get("position")).trim(),
+    initiationDate: hiredAt,
+    startDate: hiredAt,
+    currentState: { normal: "NORMAL", attention: "ATTENTION", help: "HELP" }[status],
+    inLearningPath: values.has("inLearningPath"),
+    consent: values.has("consent")
   };
-  data.employees.push(employee);
-  window.location.hash = `#employees/${employeeId}`;
+  const submitButton = form.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  try {
+    const createdEmployee = await createEmployee(payload);
+    await reloadDashboard();
+    window.location.hash = `#employees/${createdEmployee.id}`;
+  } catch (error) {
+    submitButton.disabled = false;
+    let message = form.querySelector("[data-form-error]");
+    if (!message) {
+      message = document.createElement("p");
+      message.className = "dashboard-error";
+      message.setAttribute("role", "alert");
+      message.dataset.formError = "";
+      form.prepend(message);
+    }
+    message.textContent = error.message;
+  }
 });
 
 document.addEventListener("change", (event) => {
@@ -395,22 +504,30 @@ document.addEventListener("change", (event) => {
 });
 
 async function initialize() {
-  data = await getDashboardData();
-  const settings = loadUserSettings(data.user);
-  data.user.name = settings.name;
-  data.user.email = settings.email;
-  theme = settings.theme;
-  document.documentElement.dataset.theme = theme;
-  readNotifications = loadReadNotifications();
-  renderPage();
+  const session = getSession();
+  if (!session) {
+    showLogin();
+    return;
+  }
+
+  try {
+    data = await getDashboardData(session);
+    setRouteForRole(session.role);
+    const settings = loadUserSettings(data.user);
+    data.user.name = settings.name;
+    data.user.email = settings.email;
+    theme = settings.theme;
+    document.documentElement.dataset.theme = theme;
+    readNotifications = loadReadNotifications();
+    showApplication();
+    renderPage();
+  } catch (error) {
+    clearSession();
+    showLogin(error.message);
+  }
 }
 
 initialize().catch((error) => {
   console.error("Não foi possível carregar o dashboard JourneyFlow.", error);
-  const mainContent = document.querySelector("#main-content");
-  mainContent.innerHTML = `
-    <p class="dashboard-error" role="alert">
-      Não foi possível carregar o dashboard. Atualize a página e tente novamente.
-    </p>
-  `;
+  showLogin(error.message);
 });

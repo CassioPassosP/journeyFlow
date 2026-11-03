@@ -13,7 +13,22 @@
     <script type="module" src="js/main.js"></script>
   </head>
   <body>
-    <div class="app-layout">
+    <section id="login-screen" class="login-screen" aria-labelledby="login-title" hidden>
+      <form class="login-card" data-login-form>
+        <img src="assets/icons/logo.svg" alt="" class="login-card__logo">
+        <h1 id="login-title">Entrar no JourneyFlow</h1>
+        <p>Entre com sua conta de gestor ou colaborador. A conta do colaborador é criada pelo gestor no cadastro de funcionários.</p>
+        <label>E-mail
+          <input name="email" type="email" autocomplete="username" required>
+        </label>
+        <label>Senha
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <p class="login-card__error" data-login-error role="alert" hidden></p>
+        <button class="button button--primary" type="submit">Entrar</button>
+      </form>
+    </section>
+    <div class="app-layout" hidden>
       <aside id="sidebar" class="sidebar-host" aria-label="Navegação principal"></aside>
       <div class="workspace">
         <header id="header" class="header-host"></header>

@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 /**
  * Antes: @Id Long id + dois @OneToOne(cascade = ALL) ambos com @JoinColumn(name = "id")
  * (colunas duplicadas e cascade que apagaria colaborador/pilula junto com o progresso).
- * Agora: chave composta (user_id, pill_id) + dois @ManyToOne LAZY sem cascade.
+ * Agora: chave composta (employee_id, pill_id) + dois @ManyToOne LAZY sem cascade.
  * A coluna identity "id" da tabela e preenchida pelo banco e nao e mapeada.
  */
 @Entity
@@ -22,9 +22,9 @@ public class PillProgressEntity {
     @EmbeddedId
     private PillProgressId id;
 
-    @MapsId("userId")
+    @MapsId("employeeId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "employee_id", nullable = false)
     private EmployeeEntity employee;
 
     @MapsId("pillId")

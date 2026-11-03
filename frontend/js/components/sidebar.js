@@ -3,6 +3,7 @@ import { escapeHtml, iconMarkup } from "../utils/dom.js";
 const employeeMenu = [
   { id: "home", label: "Início", icon: "dashboard" },
   { id: "conversation", label: "Conversa", icon: "chat" },
+  { id: "pills", label: "Pílulas de conhecimento", icon: "pills" },
   { id: "rewards", label: "Minhas recompensas", icon: "gift" },
   { id: "progress", label: "Meu progresso", icon: "progress" },
   { id: "settings", label: "Configurações", icon: "settings" }

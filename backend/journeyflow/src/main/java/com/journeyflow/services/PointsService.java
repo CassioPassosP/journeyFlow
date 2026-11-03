@@ -66,11 +66,9 @@ public class PointsService {
     @Transactional(readOnly = true)
     public PageResponseDto<PointsResponseDto> findPointsEntries(UUID employeeId, Pageable pageable) {
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), DEFAULT_SORT);
-
         Page<PointsEntity> result = employeeId == null
                 ? pointsRepository.findAll(page)
                 : pointsRepository.findByEmployeeId(employeeId, page);
-
         return PageResponseDto.from(result, PointsResponseDto::from);
     }
 
@@ -87,15 +85,15 @@ public class PointsService {
         return new PointsBalanceResponseDto(employeeId, pointsRepository.sumPointsByEmployeeId(employeeId));
     }
 
+    private EmployeeEntity findEmployee(UUID employeeId) {
+        return employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+    }
+
     private PointsEntity findPoints(Long id) {
         return pointsRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Registro de pontos não encontrado"));
-    }
-
-    private EmployeeEntity findEmployee(UUID employeeId) {
-        return employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
     }
 
     private static void assertNotZero(Integer points) {

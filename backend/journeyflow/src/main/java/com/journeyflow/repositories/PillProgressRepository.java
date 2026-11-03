@@ -12,6 +12,6 @@ import com.journeyflow.models.PillProgressId; // CORREÇÃO: import ausente -> o
 
 public interface PillProgressRepository extends JpaRepository<PillProgressEntity, PillProgressId> {
 
-    @Query("select pp from PillProgressEntity pp where pp.id.userId = :employeeId order by pp.completedAt desc")
+    @Query("select pp from PillProgressEntity pp where pp.id.employeeId = :employeeId order by pp.completedAt desc")
     List<PillProgressEntity> listByEmployeeId(@Param("employeeId") UUID employeeId);
 }

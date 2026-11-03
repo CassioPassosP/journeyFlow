@@ -48,7 +48,7 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
             <span class="header__role">${escapeHtml(data.user.role)}</span>
           </span>
         </div>
-        <a class="employee-mode-switch" href="${role === "employee" ? "#dashboard" : "#employee/home"}">${role === "employee" ? "Visão do gestor" : "Visão do funcionário"}</a>
+        <button class="header__logout" type="button" data-logout>Sair</button>
       </div>
     </div>
   `;

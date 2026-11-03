@@ -2,13 +2,17 @@ package com.journeyflow.models;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -51,6 +55,15 @@ public class EmployeeEntity extends PatternWorkerEntity {
 
     @Column(name = "last_active", nullable = false)
     private LocalDate lastActive;
+
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<PointsEntity> points = new ArrayList<>();
+
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<ChatEntity> chats = new ArrayList<>();
+
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<PillProgressEntity> pillProgresses = new ArrayList<>();
 }
 
 /*
@@ -64,8 +77,6 @@ public class EmployeeEntity extends PatternWorkerEntity {
  */
 
 /**
- * employee.points_id / messages_id / pills_id existem no banco com a FK invertida
- * (colaborador -> 1 registro filho). O lado "muitos" correto fica nas tabelas filhas
- * (points_log, messages, pill_progress), que apontam para o colaborador via @ManyToOne.
- * Aquelas tres colunas deixam de ser mapeadas.
+ * As colecoes abaixo sao o lado inverso das FKs mantidas pelas entidades filhas.
+ * Colunas antigas employee.points_id / messages_id / pills_id nao sao mapeadas.
  */

@@ -4,6 +4,14 @@ function points(value) {
   return `${Number(value).toLocaleString("pt-BR")} pontos`;
 }
 
+function formatCompletionDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "data não informada" : new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
 function employeeCharacter(employee) {
   const gender = String(employee.gender || employee.sex || "").toLocaleLowerCase("pt-BR");
   return ["f", "female", "woman", "feminino", "mulher"].includes(gender)
@@ -137,6 +145,79 @@ function renderProgress(container, employee) {
   `;
 }
 
+function parseQuizOptions(value) {
+  try {
+    const options = JSON.parse(value);
+    if (Array.isArray(options) && options.every((option) => typeof option === "string")) {
+      return options;
+    }
+  } catch {
+    return String(value || "").split(/\r?\n|[;,]/).map((option) => option.trim()).filter(Boolean);
+  }
+  throw new Error("As opções deste questionário estão em um formato inválido.");
+}
+
+function daysSince(startDate) {
+  if (!startDate) return 0;
+  const start = new Date(`${startDate}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.floor((today.getTime() - start.getTime()) / 86400000));
+}
+
+function renderPills(container, data, notice) {
+  const completedPillIds = new Set(data.pillProgress.map((progress) => String(progress.pillId)));
+  const elapsedDays = daysSince(data.currentEmployee.startDate);
+  const pills = [...data.pills].sort((a, b) => a.dayFrom - b.dayFrom || a.id - b.id);
+  const completedCount = pills.filter((pill) => completedPillIds.has(String(pill.id))).length;
+  const cards = pills.map((pill) => {
+    const completed = completedPillIds.has(String(pill.id));
+    const available = Number(pill.dayFrom) <= elapsedDays;
+    const options = parseQuizOptions(pill.quizOptions);
+    const quizCorrect = Number(pill.quizCorrect);
+    if (!Number.isInteger(quizCorrect) || quizCorrect < 0 || quizCorrect >= options.length) {
+      throw new Error(`O gabarito da pílula "${pill.title}" está fora das opções disponíveis.`);
+    }
+    return `
+      <article class="employee-pill-card${completed ? " employee-pill-card--completed" : ""}">
+        <header class="employee-pill-card__heading">
+          <span class="employee-pill-card__icon" aria-hidden="true">${completed ? "✓" : "💊"}</span>
+          <div><p>Dia ${escapeHtml(pill.dayFrom)}</p><h2>${escapeHtml(pill.title)}</h2></div>
+          <span class="employee-pill-card__status">${completed ? "Concluída" : available ? "Disponível" : "Bloqueada"}</span>
+        </header>
+        <p class="employee-pill-card__content">${escapeHtml(pill.content)}</p>
+        ${completed
+          ? `<p class="employee-pill-card__feedback">Concluída em ${escapeHtml(formatCompletionDate(data.pillProgress.find((progress) => String(progress.pillId) === String(pill.id))?.completedAt))}</p>`
+          : available
+            ? `<form class="employee-pill-quiz" data-pill-quiz="${escapeHtml(pill.id)}" data-correct-answer="${quizCorrect}">
+                <fieldset><legend>${escapeHtml(pill.quizQuestion)}</legend>
+                  ${options.map((option, index) => `<label><input type="radio" name="answer" value="${index}" required><span>${escapeHtml(option)}</span></label>`).join("")}
+                </fieldset>
+                <p class="employee-pill-quiz__feedback" data-pill-feedback role="status" hidden></p>
+                <button class="employee-button employee-button--primary" type="submit">Responder e concluir</button>
+              </form>`
+            : `<p class="employee-pill-card__locked">Disponível a partir do dia ${escapeHtml(pill.dayFrom)} da sua jornada.</p>`}
+      </article>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    ${pageHeading("Pílulas de conhecimento", "Aprenda no seu ritmo e acompanhe as pílulas concluídas.")}
+    <section class="employee-pills-overview">
+      <span aria-hidden="true">💊</span>
+      <div><strong>${completedCount} de ${pills.length}</strong><small>pílulas concluídas</small></div>
+      <div class="employee-pills-overview__track" role="progressbar" aria-label="Progresso das pílulas" aria-valuenow="${pills.length ? Math.round((completedCount / pills.length) * 100) : 0}" aria-valuemin="0" aria-valuemax="100">
+        <span style="width:${pills.length ? (completedCount / pills.length) * 100 : 0}%"></span>
+      </div>
+    </section>
+    ${notice ? `<p class="employee-notice" role="status">${escapeHtml(notice)}</p>` : ""}
+    <section class="employee-pills-list" aria-label="Pílulas de conhecimento">
+      ${cards || '<p class="employee-pill-empty">Ainda não há pílulas de conhecimento disponíveis.</p>'}
+    </section>
+  `;
+}
+
 export function renderEmployeePage(container, data, page, messages, notice, redeemedRewards) {
   const employee = { ...data.employee, ...data.user, role: data.employee.role, name: data.user.name, email: data.user.email };
   const employeeMessages = messages.map((message) => ({
@@ -149,6 +230,8 @@ export function renderEmployeePage(container, data, page, messages, notice, rede
     renderRewards(container, employee, notice, redeemedRewards);
   } else if (page === "progress") {
     renderProgress(container, employee);
+  } else if (page === "pills") {
+    renderPills(container, data, notice);
   } else {
     renderHome(container, employee, employeeMessages, notice, redeemedRewards);
   }

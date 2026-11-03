@@ -1,34 +1,232 @@
 import mockData from "../../data/mock-data.js";
+import { apiRequest, login } from "./api-client.js";
 
-const simulatedDelay = 120;
+const PAGE_SIZE = 100;
+const MAX_PAGES = 100;
 
-function waitForMockResponse() {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, simulatedDelay);
+async function getAllPages(path) {
+  const items = [];
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const result = await apiRequest(`${path}${path.includes("?") ? "&" : "?"}page=${page}&size=${PAGE_SIZE}`);
+    items.push(...result.content);
+    if (result.last || result.content.length === 0) return items;
+  }
+  throw new Error("A consulta excedeu o limite de páginas permitido.");
+}
+
+function statusKey(value, report) {
+  const normalized = String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (report?.helpRequest || report?.kind === "SUPPORT_REQUEST" || /help|ajuda|suporte/.test(normalized)) {
+    return "help";
+  }
+  if (report?.kind === "NEGATIVE_NO_REQUEST" || /attention|atencao|alerta/.test(normalized)) {
+    return "attention";
+  }
+  return "normal";
+}
+
+function formatDateTime(value, fallback = "Sem interação") {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
+}
+
+function formatAlertDate(alert) {
+  const date = new Date(alert.alertDate || alert.createdAt);
+  if (Number.isNaN(date.getTime())) return "Data não informada";
+  const datePart = new Intl.DateTimeFormat("pt-BR").format(date);
+  const timePart = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(date);
+  return `${datePart} - ${timePart}`;
+}
+
+function mapEmployee(employee, store) {
+  const hiredAt = employee.startDate;
+  const hiredAtDate = hiredAt ? new Date(`${hiredAt}T00:00:00`) : null;
+  const days = hiredAtDate && !Number.isNaN(hiredAtDate.getTime())
+    ? Math.max(0, Math.floor((Date.now() - hiredAtDate.getTime()) / 86400000))
+    : 0;
+
+  return {
+    id: employee.id,
+    name: employee.name,
+    role: employee.position,
+    unit: store.storeName,
+    storeId: employee.storeId,
+    hiredAt,
+    days,
+    status: statusKey(employee.currentState),
+    currentState: employee.currentState,
+    interaction: formatDateTime(employee.lastInteraction),
+    lastInteraction: employee.lastInteraction
+  };
+}
+
+function mapAlert(alert, reportById, employeeById) {
+  const report = reportById.get(alert.reportId);
+  const employee = report ? employeeById.get(report.employeeId) : null;
+  const detail = alert.subtitle?.trim();
+  const message = [alert.alertTitle, detail].filter(Boolean).join(" — ");
+
+  return {
+    id: String(alert.id),
+    backendId: alert.id,
+    employeeId: report?.employeeId || "",
+    message: message || report?.summary || "Alerta sem descrição",
+    author: employee
+      ? `${employee.name} - ${employee.role}`
+      : report?.employeeId || "Funcionário",
+    status: statusKey("", report),
+    when: formatAlertDate(alert),
+    confirmed: alert.confirmed,
+    reportId: alert.reportId
+  };
+}
+
+export async function loginAndLoadDashboard(email, password) {
+  const session = await login(email, password);
+  return getDashboardData(session);
+}
+
+export async function getDashboardData(session) {
+  if (session?.role === "EMPLOYEE") return getEmployeeDashboardData(session);
+  if (session?.role !== "MANAGER") throw new Error("Tipo de conta não reconhecido. Entre novamente.");
+
+  const manager = await apiRequest(`/manager/${encodeURIComponent(session.userId)}`);
+  const store = await apiRequest(`/store/${encodeURIComponent(manager.storeId)}`);
+  const [employeeRecords, alertRecords, reports] = await Promise.all([
+    getAllPages(`/employee?storeId=${encodeURIComponent(manager.storeId)}`),
+    getAllPages(`/alert?storeId=${encodeURIComponent(manager.storeId)}`),
+    getAllPages("/reports")
+  ]);
+
+  const employees = employeeRecords.map((employee) => mapEmployee(employee, store));
+  const employeeById = new Map(employeeRecords.map((employee, index) => [employee.id, employees[index]]));
+  const reportById = new Map(reports.map((report) => [report.id, report]));
+  const alerts = alertRecords
+    .map((alert) => mapAlert(alert, reportById, employeeById))
+    .sort((a, b) => new Date(reportById.get(b.reportId)?.createdAt || 0) - new Date(reportById.get(a.reportId)?.createdAt || 0));
+
+  const counts = employees.reduce((result, employee) => {
+    result[employee.status] += 1;
+    return result;
+  }, { normal: 0, attention: 0, help: 0 });
+
+  const reportsByEmployee = new Map();
+  for (const report of reports) {
+    reportsByEmployee.set(report.employeeId, (reportsByEmployee.get(report.employeeId) || 0) + 1);
+  }
+  const topUpdates = employees
+    .map((employee) => ({ name: employee.name.split(/\s+/)[0], count: reportsByEmployee.get(employee.id) || 0 }))
+    .filter((employee) => employee.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  const totalEmployees = employees.length;
+  const percent = (count) => totalEmployees ? Math.round((count / totalEmployees) * 100) : 0;
+
+  return {
+    unit: { name: store.storeName, updatedAt: "agora" },
+    user: { name: manager.name, email: manager.email, role: "Gestor da unidade" },
+    employee: mockData.employee,
+    menu: mockData.menu,
+    sidebarTip: mockData.sidebarTip,
+    greeting: mockData.greeting,
+    employees,
+    alerts,
+    recentAlerts: alerts.slice(0, 5),
+    summary: [
+      { id: "total", title: "Funcionários totais", value: totalEmployees, caption: "colaboradores cadastrados", icon: "onUsers", tone: "neutral" },
+      { id: "learning", title: "Na trilha de aprendizagem", value: employeeRecords.filter((employee) => employee.inLearningPath).length, caption: "Aprendizes", icon: "calendarCard", tone: "success" },
+      { id: "attention", title: "Funcionários em atenção", value: counts.attention + counts.help, caption: "Atenção ou precisam de ajuda", icon: "attention", tone: "warning" },
+      { id: "pending", title: "Alertas não confirmados", value: alerts.filter((alert) => !alert.confirmed).length, caption: "Aguardando confirmação", icon: "alertNok", tone: "danger" }
+    ],
+    monthlyStatus: {
+      totalFollowed: totalEmployees,
+      items: [
+        { id: "normal", label: "Normal", percent: percent(counts.normal), color: "success" },
+        { id: "attention", label: "Atenção", percent: percent(counts.attention), color: "warning" },
+        { id: "help", label: "Precisa de ajuda", percent: percent(counts.help), color: "danger" }
+      ]
+    },
+    topUpdates,
+    stores: [store],
+    currentManager: manager
+  };
+}
+
+async function getEmployeeDashboardData(session) {
+  const employeeId = encodeURIComponent(session.userId);
+  const employee = await apiRequest(`/employee/${employeeId}`);
+  const [store, balance, pointEntries, chatEntries, pills, pillProgress] = await Promise.all([
+    apiRequest(`/store/${encodeURIComponent(employee.storeId)}`),
+    apiRequest(`/points/employee/${employeeId}/balance`),
+    getAllPages(`/points?employeeId=${employeeId}`),
+    getAllPages(`/chat?employeeId=${employeeId}`),
+    apiRequest("/pills"),
+    apiRequest(`/pillprogress?employeeId=${employeeId}`)
+  ]);
+  const history = pointEntries.map((entry) => ({
+    id: String(entry.id),
+    emoji: entry.points < 0 ? "🎁" : "⭐",
+    label: entry.reason,
+    date: formatDateTime(entry.createdAt),
+    points: entry.points
+  }));
+  const chat = chatEntries
+    .sort((a, b) => new Date(a.dateSent || a.createdAt) - new Date(b.dateSent || b.createdAt))
+    .map((entry) => ({
+      author: entry.sender === "USER" ? "employee" : "bot",
+      text: entry.content,
+      time: formatDateTime(entry.dateSent || entry.createdAt)
+    }));
+
+  return {
+    unit: { name: store.storeName, updatedAt: "agora" },
+    user: { name: employee.name, email: employee.email, role: "Colaborador" },
+    employee: {
+      ...mockData.employee,
+      role: employee.position,
+      points: balance.balance,
+      history,
+      chat
+    },
+    menu: mockData.menu,
+    sidebarTip: mockData.sidebarTip,
+    greeting: mockData.greeting,
+    employees: [],
+    alerts: [],
+    recentAlerts: [],
+    pills,
+    pillProgress,
+    stores: [store],
+    currentEmployee: employee
+  };
+}
+
+export async function createEmployee(payload) {
+  return apiRequest("/employee", { method: "POST", body: payload });
+}
+
+export async function sendEmployeeMessage(employeeId, content) {
+  return apiRequest("/chat", {
+    method: "POST",
+    body: { employeeId, sender: "USER", content, source: "TEXT" }
   });
 }
 
-export async function getDashboardData() {
-  await waitForMockResponse();
-  return mockData;
+export async function completePill(employeeId, pillId) {
+  return apiRequest("/pillprogress", {
+    method: "POST",
+    body: { employeeId, pillId }
+  });
 }
 
-export async function getSummary() {
-  const data = await getDashboardData();
-  return data.summary;
-}
-
-export async function getRecentAlerts() {
-  const data = await getDashboardData();
-  return data.recentAlerts;
-}
-
-export async function getMonthlyStatus() {
-  const data = await getDashboardData();
-  return data.monthlyStatus;
-}
-
-export async function getTopUpdates() {
-  const data = await getDashboardData();
-  return data.topUpdates;
+export async function confirmAlert(alertId) {
+  return apiRequest(`/alert/${encodeURIComponent(alertId)}/confirmed`, {
+    method: "PATCH",
+    body: { confirmed: true }
+  });
 }

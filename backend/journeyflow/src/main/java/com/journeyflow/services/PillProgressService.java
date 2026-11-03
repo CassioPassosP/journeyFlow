@@ -22,7 +22,7 @@ import com.journeyflow.repositories.PillsRepository;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Progresso = "colaborador X concluiu a pílula Y". A chave é composta (user_id, pill_id),
+ * Progresso = "colaborador X concluiu a pílula Y". A chave é composta (employee_id, pill_id),
  * e a conclusão é registrada uma única vez (409 se repetir).
  */
 @Service

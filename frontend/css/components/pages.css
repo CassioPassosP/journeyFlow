@@ -46,7 +46,7 @@
 
 .page-toolbar--alerts {
   flex-wrap: wrap;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .search-field {
@@ -58,7 +58,8 @@
 
 .search-field input,
 .page-toolbar select,
-.form-grid input {
+.form-grid input,
+.form-grid select {
   width: 100%;
   min-height: 2.45rem;
   padding: 0 var(--space-3);
@@ -68,6 +69,18 @@
   color: var(--color-text);
   font: inherit;
   font-size: var(--font-size-xs);
+}
+
+.employee-form__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.employee-form__checkbox input {
+  accent-color: var(--color-primary);
 }
 
 .button {
