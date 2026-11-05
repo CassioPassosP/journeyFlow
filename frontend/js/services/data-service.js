@@ -74,6 +74,10 @@ function mapEmployee(employee, store) {
   };
 }
 
+export async function completePill(employeeId, pillId) {
+  return apiRequest("/pillprogress", { method: "POST", body: { employeeId, pillId } });
+}
+
 function alertTimestamp(alert) {
   if (!alert.alertDate && !alert.createdAt) return 0;
   const time = new Date(alert.alertDate || alert.createdAt).getTime();

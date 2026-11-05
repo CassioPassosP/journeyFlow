@@ -1,14 +1,13 @@
+import { clearSession, getSession } from "./services/api-client.js";
 import {
+  completePill,
   confirmAlert,
   createEmployee,
   getDashboardData,
   loginAndLoadDashboard,
   redeemReward,
-  sendEmployeeMessage,
-  startEmployeePillQuiz,
-  finishEmployeeConversation
+  sendEmployeeMessage
 } from "./services/data-service.js";
-import { clearSession, getSession } from "./services/api-client.js";
 import { renderSidebar } from "./components/sidebar.js";
 import { renderHeader } from "./components/header.js";
 import { renderSummaryCards } from "./components/summary-cards.js";
@@ -33,7 +32,7 @@ import {
   updateAlertsResults,
   updateEmployeesResults
 } from "./components/pages.js";
-import { escapeHtml, getGreeting } from "./utils/dom.js";
+import { getGreeting } from "./utils/dom.js";
 
 const DEFAULT_EMPLOYEE_SORTS = { name: "asc", interaction: "desc", days: "asc" };
 const DEFAULT_SORT_PRIORITY = ["interaction", "days", "name"];
@@ -73,6 +72,7 @@ function resetUiState() {
   notificationError = "";
   employeeNotice = "";
   lastRouteKey = "";
+  sendingMessage = false;
   window.clearTimeout(noticeTimer);
 }
 
@@ -237,7 +237,11 @@ function scrollChatsToEnd() {
   });
 }
 
-function renderPage() {
+// moveFocus: leva o foco ao conteúdo ao trocar de página (acessibilidade).
+// preserveChatScroll: mantém a posição da janela ao redesenhar depois de uma ação no chat.
+function renderPage({ moveFocus = false, preserveChatScroll = false } = {}) {
+  const viewportX = window.scrollX;
+  const viewportY = window.scrollY;
   const { page, detail } = currentRoute();
   const isEmployee = page === "employee";
   const employeePage = isEmployee ? detail || "home" : "";
@@ -245,6 +249,8 @@ function renderPage() {
     ? employeePage
     : page === "employees" ? "employees" : page === "alerts" ? "alerts" : page === "settings" ? "settings" : "dashboard";
   const role = isEmployee ? "employee" : "manager";
+
+  lastRouteKey = routeKey();
 
   renderSidebar(document.querySelector("#sidebar"), data, activePage, role);
   refreshHeader({ instant: true });
@@ -286,6 +292,12 @@ function renderPage() {
     renderUpdatesChart(mainContent.querySelector("#updates-chart"), data.topUpdates);
     renderRecentAlerts(mainContent.querySelector("#recent-alerts"), data.recentAlerts);
   }
+
+  if (moveFocus) {
+    mainContent.focus({ preventScroll: true });
+    replayPageEnter(mainContent);
+  }
+
   const shouldShowLatestChat = isEmployee && (employeePage === "conversation" || employeePage === "home");
   if (preserveChatScroll || shouldShowLatestChat) {
     requestAnimationFrame(() => {
@@ -293,34 +305,6 @@ function renderPage() {
       if (chatLog) chatLog.scrollTop = chatLog.scrollHeight;
       if (preserveChatScroll) window.scrollTo(viewportX, viewportY);
     });
-  }
-}
-
-function renderPage({ focusChat = false, moveFocus = false } = {}) {
-  if (!data) return;
-  const mainContent = document.querySelector("#main-content");
-  const key = routeKey();
-  const routeChanged = key !== lastRouteKey;
-  lastRouteKey = key;
-
-  try {
-    renderPageContent();
-  } catch (error) {
-    // Um erro ao desenhar uma tela não pode deixar a aplicação em branco.
-    console.error("Não foi possível exibir a página.", error);
-    mainContent.innerHTML = `
-      <p class="dashboard-error" role="alert">
-        Não foi possível exibir esta página. ${escapeHtml(error.message)}
-        <button class="button button--muted" type="button" data-retry-render>Tentar novamente</button>
-      </p>`;
-  }
-
-  // A transição só acontece ao trocar de página, nunca em atualizações da mesma tela.
-  if (routeChanged) replayPageEnter(mainContent);
-  if (moveFocus) mainContent.focus({ preventScroll: true });
-  if (focusChat) {
-    const input = document.querySelector("#employee-message");
-    input?.focus({ preventScroll: true });
   }
 }
 
@@ -387,7 +371,7 @@ function handleActionError(error, fallbackHandler = showPageError) {
     logout("Sua sessão expirou. Entre novamente.");
     return;
   }
-  fallbackHandler(error.message);
+  fallbackHandler(error?.message || "Algo deu errado. Tente novamente.");
 }
 
 // Recarregar os dados não pode descartar o nome/e-mail que o usuário editou em Configurações
@@ -397,14 +381,41 @@ async function refreshData() {
   data = applyUserSettings(fresh);
 }
 
-async function submitEmployeeMessage(content) {
+async function submitEmployeeMessage(content, { restoreInput } = {}) {
+  if (sendingMessage) return;
+  sendingMessage = true;
   try {
-    await sendEmployeeMessage(data.currentEmployee.id, content);
-    data = await getDashboardData(getSession());
-    employeeNotice = "Mensagem enviada.";
+    await withBusy(() => sendEmployeeMessage(data.currentEmployee.id, content));
+    await refreshData();
+    flashNotice("Mensagem enviada.");
+    renderPage({ preserveChatScroll: true });
+  } catch (error) {
+    restoreInput?.();
+    handleActionError(error);
+  } finally {
+    sendingMessage = false;
+  }
+}
+
+async function redeemRewardById(button) {
+  const rewardId = button.dataset.redeemReward;
+  const reward = (data.employee.rewards || []).find((item) => String(item.id) === String(rewardId));
+  if (!reward) return;
+  if ((data.employee.redeemedRewardIds || []).includes(reward.id)) return;
+  if (data.employee.points < reward.points) {
+    showPageError("Você não tem pontos suficientes para este resgate.");
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    await withBusy(() => redeemReward(data.currentEmployee.id, reward));
+    await refreshData();
+    flashNotice(`Recompensa resgatada: ${reward.name}.`);
     renderPage();
   } catch (error) {
-    showPageError(error.message);
+    button.disabled = false;
+    handleActionError(error);
   }
 }
 
@@ -433,6 +444,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  if (!data) return;
   if (event.target.matches("[data-search-employees]")) {
     employeeQuery = event.target.value;
     const main = document.querySelector("#main-content");
@@ -459,7 +471,7 @@ document.addEventListener("click", async (event) => {
     return;
   }
   if (closest("[data-retry-render]")) {
-    renderPage();
+    if (data) renderPage();
     return;
   }
 
@@ -471,6 +483,9 @@ document.addEventListener("click", async (event) => {
     if (!inside) target.close();
     return;
   }
+
+  // Sem dados carregados (tela de login) não há mais nada a tratar.
+  if (!data) return;
 
   if (notificationsOpen && !closest(".notification-popover, [data-toggle-notifications]")) {
     setNotificationsOpen(false);
@@ -485,6 +500,7 @@ document.addEventListener("click", async (event) => {
   if (employeeAnswer || employeeAction) {
     const text = employeeAnswer?.dataset.employeeAnswer || employeeAction.dataset.employeeAction.replace(/^[^ ]+\s/, "");
     await submitEmployeeMessage(text);
+    return;
   }
 
   const redeemButton = closest("[data-redeem-reward]");
@@ -597,15 +613,18 @@ document.addEventListener("close", (event) => {
   if (dialog) {
     document.querySelector(`[data-open-dialog="${dialog.dataset.filterDialog}"]`)?.setAttribute("aria-expanded", "false");
   }
-  if (!dialog || event.target.returnValue !== "apply") return;
+  if (!data || !dialog || event.target.returnValue !== "apply") return;
   if (dialog.dataset.filterDialog === "status-filter") {
     alertFilters.statuses = [...dialog.querySelectorAll("[data-status-filter]:checked")].map((input) => input.value);
   } else if (dialog.dataset.filterDialog === "confirmation-filter") {
     const selected = dialog.querySelector("[data-confirmation-filter]:checked");
     if (selected) alertFilters.confirmation = selected.value === "true";
-  } else {
+  } else if (dialog.querySelector("[data-date-sort]")) {
     const selected = dialog.querySelector("[data-date-sort]:checked");
     if (selected) alertFilters.sort = selected.value;
+  } else {
+    // Outros diálogos (ex.: filtros de funcionários) aplicam o próprio estado nos botões acima.
+    return;
   }
   rerenderCurrentPage();
 }, true);
@@ -637,6 +656,7 @@ document.addEventListener("submit", async (event) => {
       renderPage();
     } catch (error) {
       clearSession();
+      data = undefined;
       showLogin(error.status === 403
         ? "Credenciais inválidas. Confira o e-mail e a senha e tente novamente."
         : error.message);
@@ -646,6 +666,8 @@ document.addEventListener("submit", async (event) => {
     }
     return;
   }
+
+  if (!data) return;
 
   const chatForm = event.target.closest("[data-employee-chat-form]");
   if (chatForm) {
@@ -662,6 +684,7 @@ document.addEventListener("submit", async (event) => {
     });
     return;
   }
+
   const pillQuiz = event.target.closest("[data-pill-quiz]");
   if (pillQuiz) {
     event.preventDefault();
@@ -680,11 +703,15 @@ document.addEventListener("submit", async (event) => {
     const button = pillQuiz.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      await completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz));
-      data = await getDashboardData(getSession());
-      employeeNotice = "Resposta correta! Pílula concluída.";
+      await withBusy(() => completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz)));
+      await refreshData();
+      flashNotice("Resposta correta! Pílula concluída.");
       renderPage();
     } catch (error) {
+      if (error.status === 401) {
+        logout("Sua sessão expirou. Entre novamente.");
+        return;
+      }
       button.disabled = false;
       feedback.textContent = error.status === 409
         ? "Esta pílula já consta como concluída. Atualize a tela para ver seu progresso."
@@ -693,6 +720,7 @@ document.addEventListener("submit", async (event) => {
     }
     return;
   }
+
   const profileForm = event.target.closest("[data-profile-form]");
   if (profileForm) {
     event.preventDefault();
@@ -764,6 +792,7 @@ document.addEventListener("submit", async (event) => {
 
 document.addEventListener("change", (event) => {
   if (!event.target.matches('input[name="theme"]')) return;
+  if (!data) return;
   const selectedTheme = event.target.value;
   try {
     saveUserSettings({
