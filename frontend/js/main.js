@@ -1,11 +1,12 @@
 import {
   confirmAlert,
-  completePill,
   createEmployee,
   getDashboardData,
   loginAndLoadDashboard,
   redeemReward,
-  sendEmployeeMessage
+  sendEmployeeMessage,
+  startEmployeePillQuiz,
+  finishEmployeeConversation
 } from "./services/data-service.js";
 import { clearSession, getSession } from "./services/api-client.js";
 import { renderSidebar } from "./components/sidebar.js";
@@ -236,7 +237,7 @@ function scrollChatsToEnd() {
   });
 }
 
-function renderPageContent() {
+function renderPage() {
   const { page, detail } = currentRoute();
   const isEmployee = page === "employee";
   const employeePage = isEmployee ? detail || "home" : "";
@@ -284,6 +285,14 @@ function renderPageContent() {
     renderStatusChart(mainContent.querySelector("#status-chart"), data.monthlyStatus);
     renderUpdatesChart(mainContent.querySelector("#updates-chart"), data.topUpdates);
     renderRecentAlerts(mainContent.querySelector("#recent-alerts"), data.recentAlerts);
+  }
+  const shouldShowLatestChat = isEmployee && (employeePage === "conversation" || employeePage === "home");
+  if (preserveChatScroll || shouldShowLatestChat) {
+    requestAnimationFrame(() => {
+      const chatLog = document.querySelector(".employee-chat-log");
+      if (chatLog) chatLog.scrollTop = chatLog.scrollHeight;
+      if (preserveChatScroll) window.scrollTo(viewportX, viewportY);
+    });
   }
 }
 
@@ -388,52 +397,14 @@ async function refreshData() {
   data = applyUserSettings(fresh);
 }
 
-async function submitEmployeeMessage(content, { restoreInput } = {}) {
-  if (sendingMessage) return;
-  sendingMessage = true;
-  appendPendingMessage(content);
+async function submitEmployeeMessage(content) {
   try {
-    await withBusy(() => sendEmployeeMessage(data.currentEmployee.id, content));
-    await refreshData();
-    flashNotice("Mensagem enviada.");
-    renderPage({ focusChat: true });
-  } catch (error) {
-    document.querySelector("[data-pending]")?.remove();
-    restoreInput?.();
-    handleActionError(error);
-  } finally {
-    sendingMessage = false;
-  }
-}
-
-// A mensagem aparece na hora; o servidor confirma em seguida.
-function appendPendingMessage(text) {
-  const log = document.querySelector(".employee-chat-log");
-  if (!log) return;
-  log.querySelector(".employee-chat-empty")?.remove();
-  const message = document.createElement("article");
-  message.className = "employee-chat-message employee-chat-message--employee is-pending";
-  message.dataset.pending = "";
-  message.innerHTML = `<div class="employee-chat-message__body"><p>${escapeHtml(text)}</p><time>Enviando…</time></div>`;
-  log.append(message);
-  log.scrollTo({ top: log.scrollHeight, behavior: prefersReducedMotion() ? "auto" : "smooth" });
-}
-
-async function redeemRewardById(button) {
-  const reward = data.employee.rewards.find((item) => item.id === button.dataset.redeemReward);
-  const redeemed = data.employee.redeemedRewardIds || [];
-  if (!reward || redeemed.includes(reward.id) || data.employee.points < reward.points) return;
-
-  button.disabled = true;
-  try {
-    // O resgate agora é gravado na API (lançamento negativo) e sobrevive ao recarregar a página.
-    await withBusy(() => redeemReward(data.currentEmployee.id, reward));
-    await refreshData();
-    flashNotice(`${reward.name} resgatado! Aproveite sua recompensa.`);
+    await sendEmployeeMessage(data.currentEmployee.id, content);
+    data = await getDashboardData(getSession());
+    employeeNotice = "Mensagem enviada.";
     renderPage();
   } catch (error) {
-    button.disabled = false;
-    handleActionError(error);
+    showPageError(error.message);
   }
 }
 
@@ -514,7 +485,6 @@ document.addEventListener("click", async (event) => {
   if (employeeAnswer || employeeAction) {
     const text = employeeAnswer?.dataset.employeeAnswer || employeeAction.dataset.employeeAction.replace(/^[^ ]+\s/, "");
     await submitEmployeeMessage(text);
-    return;
   }
 
   const redeemButton = closest("[data-redeem-reward]");
@@ -692,7 +662,6 @@ document.addEventListener("submit", async (event) => {
     });
     return;
   }
-
   const pillQuiz = event.target.closest("[data-pill-quiz]");
   if (pillQuiz) {
     event.preventDefault();
@@ -711,16 +680,12 @@ document.addEventListener("submit", async (event) => {
     const button = pillQuiz.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      await withBusy(() => completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz)));
-      await refreshData();
-      flashNotice("Resposta correta! Pílula concluída.");
+      await completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz));
+      data = await getDashboardData(getSession());
+      employeeNotice = "Resposta correta! Pílula concluída.";
       renderPage();
     } catch (error) {
       button.disabled = false;
-      if (error.status === 401) {
-        logout("Sua sessão expirou. Entre novamente.");
-        return;
-      }
       feedback.textContent = error.status === 409
         ? "Esta pílula já consta como concluída. Atualize a tela para ver seu progresso."
         : error.message;
@@ -728,7 +693,6 @@ document.addEventListener("submit", async (event) => {
     }
     return;
   }
-
   const profileForm = event.target.closest("[data-profile-form]");
   if (profileForm) {
     event.preventDefault();

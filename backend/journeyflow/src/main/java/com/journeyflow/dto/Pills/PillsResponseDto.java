@@ -16,7 +16,7 @@ public record PillsResponseDto(
                 p.getId(),
                 p.getTitle(),
                 p.getContent(),
-                p.getDay_from(),
+                p.getDayFrom(),
                 p.getQuiz_question(),
                 p.getQuiz_options(),
                 p.getQuiz_correct());

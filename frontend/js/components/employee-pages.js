@@ -59,8 +59,19 @@ function rewardsList(rewards, balance, redeemedRewards, compact = false) {
   }).join("");
 }
 
-function conversation(messages, { compact = false } = {}) {
+function quizAnswersForPill(pillId, pills) {
+  const pill = pills.find((item) => String(item.id) === String(pillId));
+  if (!pill) return [];
+  try {
+    return parseQuizOptions(pill.quizOptions);
+  } catch {
+    return [];
+  }
+}
+
+function conversation(messages, { compact = false, pills = [], completedPillIds = new Set(), notice = "" } = {}) {
   const visibleMessages = compact ? messages.slice(-4) : messages;
+  const busy = notice === "JourneyFlow está respondendo…";
   return `
     <section class="employee-conversation" aria-label="Conversa com JourneyFlow">
       ${compact ? "" : `
@@ -77,22 +88,27 @@ function conversation(messages, { compact = false } = {}) {
             <div class="employee-chat-message__body">
               <p>${escapeHtml(message.text)}</p>
               <time>${escapeHtml(message.time)}</time>
+              ${message.author === "bot" && message.pillId && !completedPillIds.has(String(message.pillId))
+                ? `<div class="employee-chat-answers">${quizAnswersForPill(message.pillId, pills).map((answer) => `<button type="button" data-employee-answer="${escapeHtml(answer)}" data-employee-pill-id="${escapeHtml(message.pillId)}">${escapeHtml(answer)}</button>`).join("")}</div>`
+                : ""}
               ${message.answers ? `<div class="employee-chat-answers">${message.answers.map((answer) => `<button type="button" data-employee-answer="${escapeHtml(answer)}">${escapeHtml(answer)}</button>`).join("")}</div>` : ""}
               ${message.actions ? `<div class="employee-chat-actions">${message.actions.map((action) => `<button type="button" data-employee-action="${escapeHtml(action)}">${escapeHtml(action)}</button>`).join("")}</div>` : ""}
             </div>
           </article>
         `).join("")}
       </div>
+      ${notice ? `<p class="employee-notice" role="status">${escapeHtml(notice)}</p>` : ""}
       <form class="employee-chat-compose" data-employee-chat-form>
         <label class="visually-hidden" for="employee-message">Digite sua mensagem</label>
-        <input id="employee-message" name="message" maxlength="500" placeholder="Digite sua mensagem..." autocomplete="off" required>
-        <button type="submit" aria-label="Enviar mensagem">➤</button>
+        <input id="employee-message" name="message" maxlength="500" placeholder="Digite sua mensagem..." autocomplete="off" required${busy ? " disabled" : ""}>
+        <button type="submit" aria-label="Enviar mensagem"${busy ? " disabled" : ""}>➤</button>
       </form>
+      ${compact ? `<p class="employee-chat-privacy">Você conversa com a IA do JourneyFlow. Suas mensagens e o conteúdo de aprendizagem relevante são processados pelo Gemini para gerar respostas. Um pedido de contato do RH só é encaminhado com sua autorização.</p>` : `<div class="employee-chat-controls"><button type="button" class="employee-button" data-employee-start-quiz${busy ? " disabled" : ""}>Praticar uma pílula</button><button type="button" class="employee-button" data-employee-finish${busy ? " disabled" : ""}>Concluir conversa</button></div><p class="employee-chat-privacy">Você conversa com a IA do JourneyFlow, que usa o Gemini para processar as mensagens e o conteúdo de aprendizagem relevante. Ao concluir, o histórico é analisado para verificar se cabe acompanhamento. Um pedido de contato do RH só é encaminhado com sua autorização e não inclui o relato.</p>`}
     </section>
   `;
 }
 
-function renderHome(container, employee, messages, notice, redeemedRewards) {
+function renderHome(container, employee, messages, notice, redeemedRewards, pills, completedPillIds) {
   container.innerHTML = `
     <div class="employee-dashboard">
       <div class="employee-main-column">
@@ -101,7 +117,7 @@ function renderHome(container, employee, messages, notice, redeemedRewards) {
             <p>Responda às perguntas para ganhar pontos e trocar por recompensas no seu trabalho.</p></div>
           <div class="employee-welcome__art" aria-hidden="true"><img class="employee-welcome__character" src="${employeeCharacter(employee)}" alt=""></div>
         </section>
-        ${conversation(messages, { compact: true })}
+        ${conversation(messages, { compact: true, pills, completedPillIds, notice })}
         <section class="employee-tips">
           <h2>👍 Como participar</h2>
           <div><article><span>🗨️</span><p><strong>Responda perguntas</strong><small>Ganhe pontos ao conversar</small></p></article>
@@ -171,7 +187,6 @@ function daysSince(startDate) {
   today.setHours(0, 0, 0, 0);
   return Math.max(0, Math.floor((today.getTime() - start.getTime()) / 86400000));
 }
-
 function renderPills(container, data, notice) {
   const completedPillIds = new Set(data.pillProgress.map((progress) => String(progress.pillId)));
   const elapsedDays = daysSince(data.currentEmployee.startDate);
@@ -202,30 +217,22 @@ function renderPills(container, data, notice) {
       `;
     }
     return `
-      <article class="employee-pill-card${completed ? " employee-pill-card--completed" : ""}">
+      <article class="employee-pill-card${completed ? ' employee-pill-card--completed' : ''}">
         <header class="employee-pill-card__heading">
-          <span class="employee-pill-card__icon" aria-hidden="true">${completed ? "✓" : "💊"}</span>
+          <span class="employee-pill-card__icon" aria-hidden="true">${completed ? '✓' : '💊'}</span>
           <div><p>Dia ${escapeHtml(pill.dayFrom)}</p><h2>${escapeHtml(pill.title)}</h2></div>
-          <span class="employee-pill-card__status">${completed ? "Concluída" : available ? "Disponível" : "Bloqueada"}</span>
+          <span class="employee-pill-card__status">${status}</span>
         </header>
-        <p class="employee-pill-card__content">${escapeHtml(pill.content)}</p>
-        ${completed
-          ? `<p class="employee-pill-card__feedback">Concluída em ${escapeHtml(formatCompletionDate(data.pillProgress.find((progress) => String(progress.pillId) === String(pill.id))?.completedAt))}</p>`
-          : available
-            ? `<form class="employee-pill-quiz" data-pill-quiz="${escapeHtml(pill.id)}" data-correct-answer="${quizCorrect}">
-                <fieldset><legend>${escapeHtml(pill.quizQuestion)}</legend>
-                  ${options.map((option, index) => `<label><input type="radio" name="answer" value="${index}" required><span>${escapeHtml(option)}</span></label>`).join("")}
-                </fieldset>
-                <p class="employee-pill-quiz__feedback" data-pill-feedback role="status" hidden></p>
-                <button class="employee-button employee-button--primary" type="submit">Responder e concluir</button>
-              </form>`
-            : `<p class="employee-pill-card__locked">Disponível a partir do dia ${escapeHtml(pill.dayFrom)} da sua jornada.</p>`}
+        <div class="employee-pills-overview__track" role="progressbar" aria-label="Progresso: ${escapeHtml(pill.title)}" aria-valuenow="${progressValue}" aria-valuemin="0" aria-valuemax="100">
+          <span style="width:${progressValue}%"></span>
+        </div>
+        <p class="employee-pill-card__feedback">${progressText}</p>
       </article>
     `;
-  }).join("");
+  }).join('');
 
   container.innerHTML = `
-    ${pageHeading("Pílulas de conhecimento", "Aprenda no seu ritmo e acompanhe as pílulas concluídas.")}
+    ${pageHeading('Pílulas de conhecimento', 'Acompanhe seu progresso. Os quizzes e as respostas ficam na conversa.')}
     <section class="employee-pills-overview">
       <span aria-hidden="true">💊</span>
       <div><strong>${completedCount} de ${pills.length}</strong><small>pílulas concluídas</small></div>
@@ -233,21 +240,21 @@ function renderPills(container, data, notice) {
         <span style="width:${pills.length ? (completedCount / pills.length) * 100 : 0}%"></span>
       </div>
     </section>
-    ${notice ? `<p class="employee-notice" role="status">${escapeHtml(notice)}</p>` : ""}
-    <section class="employee-pills-list" aria-label="Pílulas de conhecimento">
+    ${notice ? `<p class="employee-notice" role="status">${escapeHtml(notice)}</p>` : ''}
+    <section class="employee-pills-list" aria-label="Progresso das pílulas de conhecimento">
       ${cards || '<p class="employee-pill-empty">Ainda não há pílulas de conhecimento disponíveis.</p>'}
     </section>
   `;
 }
-
 export function renderEmployeePage(container, data, page, messages, notice, redeemedRewards) {
   const employee = { ...data.employee, ...data.user, role: data.employee.role, name: data.user.name, email: data.user.email };
   const employeeMessages = messages.map((message) => ({
     ...message,
     text: message.text.replaceAll("{role}", employee.role)
   }));
+  const completedPillIds = new Set((data.pillProgress || []).map((progress) => String(progress.pillId)));
   if (page === "conversation") {
-    container.innerHTML = `${pageHeading("Conversa", "Compartilhe como está sendo sua jornada de trabalho.")}${conversation(employeeMessages)}`;
+    container.innerHTML = `${pageHeading("Conversa", "Compartilhe como está sendo sua jornada de trabalho.")}${conversation(employeeMessages, { pills: data.pills || [], completedPillIds, notice })}`;
   } else if (page === "rewards") {
     renderRewards(container, employee, notice, redeemedRewards);
   } else if (page === "progress") {
@@ -255,6 +262,6 @@ export function renderEmployeePage(container, data, page, messages, notice, rede
   } else if (page === "pills") {
     renderPills(container, data, notice);
   } else {
-    renderHome(container, employee, employeeMessages, notice, redeemedRewards);
+    renderHome(container, employee, employeeMessages, notice, redeemedRewards, data.pills || [], completedPillIds);
   }
 }

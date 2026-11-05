@@ -16,7 +16,8 @@ public record ChatResponseDto(
         ContentSource source,
         String author,
         OffsetDateTime createdAt,
-        Instant dateSent
+        Instant dateSent,
+        Long pillId
 ) {
     public static ChatResponseDto from(ChatEntity c) {
         return new ChatResponseDto(
@@ -27,6 +28,7 @@ public record ChatResponseDto(
                 c.getSource(),
                 c.getAuthor(),
                 c.getCreatedAt(),
-                c.getDateSent());
+                c.getDateSent(),
+                c.getPillId());
     }
 }
