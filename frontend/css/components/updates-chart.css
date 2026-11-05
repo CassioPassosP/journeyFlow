@@ -1,11 +1,10 @@
 .updates-chart {
   grid-column: span 2;
-  min-height: 17.5rem;
 }
 
 .updates-chart__chart {
   position: relative;
-  height: 12.8rem;
+  height: 12.5rem;
   margin-top: var(--space-4);
 }
 

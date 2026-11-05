@@ -9,13 +9,32 @@ const employeeMenu = [
   { id: "settings", label: "Configurações", icon: "settings" }
 ];
 
+function isCurrent(item, activePage) {
+  return activePage === item.id
+    || (activePage.startsWith("employees") && item.id === "employees")
+    || (activePage.startsWith("alerts") && item.id === "alerts");
+}
+
 export function renderSidebar(container, data, activePage = "dashboard", role = "manager") {
   const menu = role === "employee" ? employeeMenu : data.menu;
+
+  // O menu só muda quando o perfil muda. Nas demais navegações apenas o item ativo é
+  // atualizado, o que evita piscar e preserva o foco do teclado nos links.
+  const signature = `${role}:${menu.map((item) => item.id).join(",")}`;
+  if (container.dataset.signature === signature) {
+    container.querySelectorAll(".sidebar__link").forEach((link, index) => {
+      if (isCurrent(menu[index], activePage)) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+    return;
+  }
+  container.dataset.signature = signature;
+
   const menuItems = menu.map((item) => {
-    const currentPage = activePage === item.id || (activePage.startsWith("employees") && item.id === "employees")
-      || (activePage.startsWith("alerts") && item.id === "alerts")
-      ? ' aria-current="page"'
-      : "";
+    const currentPage = isCurrent(item, activePage) ? ' aria-current="page"' : "";
     const href = role === "employee" ? `#employee/${item.id}` : `#${item.id}`;
     return `
       <a class="sidebar__link" href="${escapeHtml(href)}"${currentPage}>

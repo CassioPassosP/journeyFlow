@@ -35,7 +35,14 @@ function formatDateTime(value, fallback = "Sem interação") {
   }).format(date);
 }
 
+function formatUpdatedAt() {
+  const time = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+  return `hoje às ${time}`;
+}
+
 function formatAlertDate(alert) {
+  // new Date(null) vira 1970; sem data na API, mostramos que ela não foi informada.
+  if (!alert.alertDate && !alert.createdAt) return "Data não informada";
   const date = new Date(alert.alertDate || alert.createdAt);
   if (Number.isNaN(date.getTime())) return "Data não informada";
   const datePart = new Intl.DateTimeFormat("pt-BR").format(date);
@@ -61,8 +68,16 @@ function mapEmployee(employee, store) {
     status: statusKey(employee.currentState),
     currentState: employee.currentState,
     interaction: formatDateTime(employee.lastInteraction),
-    lastInteraction: employee.lastInteraction
+    lastInteraction: employee.lastInteraction,
+    // Valor numérico para ordenar sem precisar interpretar o texto formatado.
+    lastInteractionAt: employee.lastInteraction ? new Date(employee.lastInteraction).getTime() || 0 : 0
   };
+}
+
+function alertTimestamp(alert) {
+  if (!alert.alertDate && !alert.createdAt) return 0;
+  const time = new Date(alert.alertDate || alert.createdAt).getTime();
+  return Number.isNaN(time) ? 0 : time;
 }
 
 function mapAlert(alert, reportById, employeeById) {
@@ -81,7 +96,9 @@ function mapAlert(alert, reportById, employeeById) {
       : report?.employeeId || "Funcionário",
     status: statusKey("", report),
     when: formatAlertDate(alert),
+    timestamp: alertTimestamp(alert),
     confirmed: alert.confirmed,
+    suggestion: alert.suggestion?.trim() || "",
     reportId: alert.reportId
   };
 }
@@ -95,12 +112,15 @@ export async function getDashboardData(session) {
   if (session?.role === "EMPLOYEE") return getEmployeeDashboardData(session);
   if (session?.role !== "MANAGER") throw new Error("Tipo de conta não reconhecido. Entre novamente.");
 
-  const manager = await apiRequest(`/manager/${encodeURIComponent(session.userId)}`);
-  const store = await apiRequest(`/store/${encodeURIComponent(manager.storeId)}`);
-  const [employeeRecords, alertRecords, reports] = await Promise.all([
-    getAllPages(`/employee?storeId=${encodeURIComponent(manager.storeId)}`),
-    getAllPages(`/alert?storeId=${encodeURIComponent(manager.storeId)}`),
+  // Duas rodadas de requisições em paralelo em vez de três em sequência.
+  const [manager, reports] = await Promise.all([
+    apiRequest(`/manager/${encodeURIComponent(session.userId)}`),
     getAllPages("/reports")
+  ]);
+  const [store, employeeRecords, alertRecords] = await Promise.all([
+    apiRequest(`/store/${encodeURIComponent(manager.storeId)}`),
+    getAllPages(`/employee?storeId=${encodeURIComponent(manager.storeId)}`),
+    getAllPages(`/alert?storeId=${encodeURIComponent(manager.storeId)}`)
   ]);
 
   const employees = employeeRecords.map((employee) => mapEmployee(employee, store));
@@ -128,7 +148,7 @@ export async function getDashboardData(session) {
   const percent = (count) => totalEmployees ? Math.round((count / totalEmployees) * 100) : 0;
 
   return {
-    unit: { name: store.storeName, updatedAt: "agora" },
+    unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
     user: { name: manager.name, email: manager.email, role: "Gestor da unidade" },
     employee: mockData.employee,
     menu: mockData.menu,
@@ -157,6 +177,10 @@ export async function getDashboardData(session) {
   };
 }
 
+function redemptionReason(reward) {
+  return `Resgate: ${reward.name}`;
+}
+
 async function getEmployeeDashboardData(session) {
   const employeeId = encodeURIComponent(session.userId);
   const employee = await apiRequest(`/employee/${employeeId}`);
@@ -175,7 +199,11 @@ async function getEmployeeDashboardData(session) {
     date: formatDateTime(entry.createdAt),
     points: entry.points
   }));
-  const chat = chatEntries
+  const rewards = mockData.employee.rewards;
+  const redeemedRewardIds = rewards
+    .filter((reward) => pointEntries.some((entry) => entry.points < 0 && entry.reason === redemptionReason(reward)))
+    .map((reward) => reward.id);
+  const chat = [...chatEntries]
     .sort((a, b) => new Date(a.dateSent || a.createdAt) - new Date(b.dateSent || b.createdAt))
     .map((entry) => ({
       author: entry.sender === "USER" ? "employee" : "bot",
@@ -184,14 +212,15 @@ async function getEmployeeDashboardData(session) {
     }));
 
   return {
-    unit: { name: store.storeName, updatedAt: "agora" },
+    unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
     user: { name: employee.name, email: employee.email, role: "Colaborador" },
     employee: {
       ...mockData.employee,
       role: employee.position,
       points: balance.balance,
       history,
-      chat
+      chat,
+      redeemedRewardIds
     },
     menu: mockData.menu,
     sidebarTip: mockData.sidebarTip,
@@ -214,6 +243,15 @@ export async function sendEmployeeMessage(employeeId, content) {
   return apiRequest("/chat", {
     method: "POST",
     body: { employeeId, sender: "USER", content, source: "TEXT" }
+  });
+}
+
+// O resgate era só uma conta feita no navegador e sumia ao recarregar a página.
+// A API de pontos aceita lançamentos negativos, então o resgate passa a ser gravado.
+export async function redeemReward(employeeId, reward) {
+  return apiRequest("/points", {
+    method: "POST",
+    body: { employeeId, reason: redemptionReason(reward), points: -Math.abs(reward.points) }
   });
 }
 

@@ -1,4 +1,4 @@
-import { escapeHtml, getStatusConfig, getThemeColor } from "../utils/dom.js";
+import { escapeHtml, getStatusConfig, getThemeColor, tooltipStyle } from "../utils/dom.js";
 
 let chartInstance;
 
@@ -14,7 +14,7 @@ export function renderStatusChart(container, data) {
   const legendMarkup = segments.map((item) => {
     const config = getStatusConfig(item.id);
     return `
-      <li class="status-chart__legend-item">
+      <li class="status-chart__legend-item" style="--pct:${Math.round(item.percent)}">
         <span class="status-chart__dot status-chart__dot--${config.tone}" aria-hidden="true"></span>
         <span class="status-chart__legend-label">${escapeHtml(config.label)}</span>
         <span class="status-chart__legend-value">${Math.round(item.percent)}%</span>
@@ -24,6 +24,7 @@ export function renderStatusChart(container, data) {
 
   container.innerHTML = `
     <h2 class="dashboard-panel__title">Status mensal da equipe</h2>
+    <p class="dashboard-panel__subtitle">Como cada colaborador reportou se sentir</p>
     <div class="status-chart__content">
       <div class="status-chart__visual" role="img" aria-label="Distribuição do status dos colaboradores">
         <canvas class="status-chart__canvas"></canvas>
@@ -41,7 +42,11 @@ export function renderStatusChart(container, data) {
   const chartConstructor = window.Chart;
 
   if (!chartConstructor) {
-    throw new Error("Chart.js não foi carregado.");
+    // Sem Chart.js (CDN bloqueado/offline) o resto do dashboard continua funcionando.
+    console.error("Chart.js não foi carregado.");
+    // A legenda ao lado já traz os percentuais; só removemos o canvas vazio.
+    container.querySelector("canvas")?.remove();
+    return;
   }
 
   chartInstance = new chartConstructor(container.querySelector(".status-chart__canvas"), {
@@ -52,16 +57,20 @@ export function renderStatusChart(container, data) {
         data: segments.map((item) => item.percent),
         backgroundColor: segments.map((item) => getThemeColor(getStatusConfig(item.id).tone)),
         borderWidth: 0,
-        hoverOffset: 4
+        borderRadius: 8,
+        spacing: 3,
+        hoverOffset: 3
       }]
     },
     options: {
+      animation: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? false : { duration: 450 },
       responsive: true,
       maintainAspectRatio: false,
-      cutout: "72%",
+      cutout: "78%",
       plugins: {
         legend: { display: false },
         tooltip: {
+          ...tooltipStyle(),
           callbacks: {
             label: (context) => ` ${context.label}: ${Math.round(context.parsed)}%`
           }

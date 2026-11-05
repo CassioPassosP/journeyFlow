@@ -70,6 +70,7 @@ function conversation(messages, { compact = false } = {}) {
         </div>
       `}
       <div class="employee-chat-log" aria-live="polite">
+        ${visibleMessages.length ? "" : '<p class="employee-chat-empty">Nenhuma mensagem ainda. Escreva abaixo para começar a conversa.</p>'}
         ${visibleMessages.map((message) => `
           <article class="employee-chat-message employee-chat-message--${message.author === "employee" ? "employee" : "bot"}">
             ${message.author === "bot" ? '<span class="employee-bot-avatar" aria-hidden="true">🤖</span>' : ""}
@@ -134,12 +135,17 @@ function renderRewards(container, employee, notice, redeemedRewards) {
 }
 
 function renderProgress(container, employee) {
-  const totalEarned = employee.history.reduce((total, entry) => total + entry.points, 0);
-  const nextReward = employee.rewards.find((reward) => reward.points > employee.points);
+  // Resgates entram no histórico com pontos negativos; antes eles subtraíam do total "conquistado"
+  // e eram contados como "interações registradas".
+  const earnedEntries = employee.history.filter((entry) => entry.points > 0);
+  const totalEarned = earnedEntries.reduce((total, entry) => total + entry.points, 0);
+  const nextReward = [...employee.rewards]
+    .sort((a, b) => a.points - b.points)
+    .find((reward) => reward.points > employee.points);
   const progress = nextReward ? Math.min(100, Math.round((employee.points / nextReward.points) * 100)) : 100;
   container.innerHTML = `
     ${pageHeading("Meu progresso", "Acompanhe seus pontos e continue avançando.")}
-    <section class="employee-progress-summary"><article><span>⭐</span><small>Saldo atual</small><strong>${escapeHtml(points(employee.points))}</strong></article><article><span>🎉</span><small>Pontos conquistados</small><strong>${escapeHtml(points(totalEarned))}</strong></article><article><span>💬</span><small>Interações registradas</small><strong>${escapeHtml(employee.history.length)}</strong></article></section>
+    <section class="employee-progress-summary"><article><span>⭐</span><small>Saldo atual</small><strong>${escapeHtml(points(employee.points))}</strong></article><article><span>🎉</span><small>Pontos conquistados</small><strong>${escapeHtml(points(totalEarned))}</strong></article><article><span>💬</span><small>Interações registradas</small><strong>${escapeHtml(earnedEntries.length)}</strong></article></section>
     <section class="employee-progress-panel"><h2>${nextReward ? `Sua próxima recompensa: ${escapeHtml(nextReward.name)}` : "Você desbloqueou todas as recompensas!"}</h2><div class="employee-progress-track" role="progressbar" aria-label="Progresso para a próxima recompensa" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><span style="width:${progress}%"></span></div><p>${escapeHtml(employee.points)} de ${escapeHtml(nextReward?.points || employee.points)} pontos</p></section>
     <section class="employee-progress-panel"><h2>Como ganhar mais pontos</h2><ul class="employee-ways-list"><li>🗨️ Responda às perguntas da conversa <strong>+10 pontos</strong></li><li>⭐ Conte como foi sua experiência <strong>+20 pontos</strong></li></ul></section>
   `;
@@ -174,10 +180,26 @@ function renderPills(container, data, notice) {
   const cards = pills.map((pill) => {
     const completed = completedPillIds.has(String(pill.id));
     const available = Number(pill.dayFrom) <= elapsedDays;
-    const options = parseQuizOptions(pill.quizOptions);
-    const quizCorrect = Number(pill.quizCorrect);
-    if (!Number.isInteger(quizCorrect) || quizCorrect < 0 || quizCorrect >= options.length) {
-      throw new Error(`O gabarito da pílula "${pill.title}" está fora das opções disponíveis.`);
+    let options;
+    let quizCorrect;
+    try {
+      options = parseQuizOptions(pill.quizOptions);
+      quizCorrect = Number(pill.quizCorrect);
+      if (!Number.isInteger(quizCorrect) || quizCorrect < 0 || quizCorrect >= options.length) {
+        throw new Error(`O gabarito da pílula "${pill.title}" está fora das opções disponíveis.`);
+      }
+    } catch (error) {
+      // Uma pílula mal cadastrada não deve apagar a lista inteira.
+      console.error(error);
+      return `
+        <article class="employee-pill-card">
+          <header class="employee-pill-card__heading">
+            <span class="employee-pill-card__icon" aria-hidden="true">💊</span>
+            <div><p>Dia ${escapeHtml(pill.dayFrom)}</p><h2>${escapeHtml(pill.title)}</h2></div>
+          </header>
+          <p class="employee-pill-card__locked">Esta pílula está indisponível no momento. Avise o gestor se o problema continuar.</p>
+        </article>
+      `;
     }
     return `
       <article class="employee-pill-card${completed ? " employee-pill-card--completed" : ""}">

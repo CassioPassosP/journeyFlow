@@ -100,3 +100,19 @@ export function getGreeting(hour = new Date().getHours()) {
 
   return "Boa noite";
 }
+
+// Tooltip dos gráficos: pílula escura no tema claro e clara no escuro, sem caixinha de cor.
+export function tooltipStyle() {
+  return {
+    backgroundColor: getThemeColor("text"),
+    titleColor: getThemeColor("surface"),
+    bodyColor: getThemeColor("surface"),
+    titleFont: { weight: 600, size: 12 },
+    bodyFont: { weight: 500, size: 12 },
+    padding: { x: 12, y: 8 },
+    cornerRadius: 10,
+    displayColors: false,
+    caretSize: 5,
+    caretPadding: 6
+  };
+}

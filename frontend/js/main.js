@@ -4,6 +4,7 @@ import {
   createEmployee,
   getDashboardData,
   loginAndLoadDashboard,
+  redeemReward,
   sendEmployeeMessage
 } from "./services/data-service.js";
 import { clearSession, getSession } from "./services/api-client.js";
@@ -16,6 +17,7 @@ import { renderRecentAlerts } from "./components/recent-alerts.js";
 import { renderEmployeePage } from "./components/employee-pages.js";
 import {
   loadReadNotifications,
+  loadTheme,
   loadUserSettings,
   saveReadNotifications,
   saveUserSettings
@@ -26,13 +28,19 @@ import {
   renderEmployeeDetails,
   renderEmployeeForm,
   renderEmployeesPage,
-  renderSettingsPage
+  renderSettingsPage,
+  updateAlertsResults,
+  updateEmployeesResults
 } from "./components/pages.js";
 import { escapeHtml, getGreeting } from "./utils/dom.js";
 
+const DEFAULT_EMPLOYEE_SORTS = { name: "asc", interaction: "desc", days: "asc" };
+const DEFAULT_SORT_PRIORITY = ["interaction", "days", "name"];
+
 let data;
 let employeeQuery = "";
-const employeeSorts = { name: "asc", interaction: "desc", days: "asc" };
+let employeeSorts = { ...DEFAULT_EMPLOYEE_SORTS };
+let employeeSortPriority = [...DEFAULT_SORT_PRIORITY];
 let employeeStatuses = null;
 let alertQuery = "";
 let alertFilters = { statuses: [] };
@@ -41,11 +49,165 @@ let theme = "light";
 let notificationsOpen = false;
 let notificationError = "";
 let employeeNotice = "";
-const redeemedRewards = new Set();
+let lastRouteKey = "";
+let busyCount = 0;
+let noticeTimer;
+let sendingMessage = false;
+
+/* ------------------------------------------------------------------ */
+/* Estado e utilitários                                                */
+/* ------------------------------------------------------------------ */
+
+// Ao sair (ou ao expirar a sessão) tudo o que pertence à conta anterior é descartado.
+// Antes filtros, buscas, avisos e recompensas resgatadas "vazavam" para o próximo login.
+function resetUiState() {
+  employeeQuery = "";
+  employeeSorts = { ...DEFAULT_EMPLOYEE_SORTS };
+  employeeSortPriority = [...DEFAULT_SORT_PRIORITY];
+  employeeStatuses = null;
+  alertQuery = "";
+  alertFilters = { statuses: [] };
+  readNotifications = new Set();
+  notificationsOpen = false;
+  notificationError = "";
+  employeeNotice = "";
+  lastRouteKey = "";
+  window.clearTimeout(noticeTimer);
+}
+
+function userKey() {
+  const session = getSession();
+  return session ? `${session.role}.${session.userId}` : "";
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Preferências guardadas no navegador podem estar corrompidas; isso não pode impedir o login.
+function withFallback(task, fallback, label) {
+  try {
+    return task();
+  } catch (error) {
+    console.error(label, error);
+    return fallback;
+  }
+}
+
+function applyUserSettings(nextData) {
+  const settings = withFallback(
+    () => loadUserSettings(nextData.user, userKey()),
+    { name: nextData.user.name, email: nextData.user.email },
+    "Não foi possível ler as configurações do usuário."
+  );
+  nextData.user.name = settings.name;
+  nextData.user.email = settings.email;
+  return nextData;
+}
+
+function applyTheme(nextTheme, { animate = true } = {}) {
+  theme = nextTheme === "dark" ? "dark" : "light";
+  const root = document.documentElement;
+  if (animate && !prefersReducedMotion()) {
+    root.classList.add("theme-transition");
+    window.setTimeout(() => root.classList.remove("theme-transition"), 350);
+  }
+  root.dataset.theme = theme;
+}
+
+function setBusy(delta) {
+  busyCount = Math.max(0, busyCount + delta);
+  document.querySelector("#progress")?.classList.toggle("is-active", busyCount > 0);
+  document.documentElement.toggleAttribute("aria-busy", busyCount > 0);
+}
+
+async function withBusy(task) {
+  setBusy(1);
+  try {
+    return await task();
+  } finally {
+    setBusy(-1);
+  }
+}
+
+function hideBoot() {
+  const boot = document.querySelector("#boot");
+  if (!boot) return;
+  boot.classList.add("is-hidden");
+  window.setTimeout(() => boot.remove(), 300);
+}
+
+/* ------------------------------------------------------------------ */
+/* Rotas                                                               */
+/* ------------------------------------------------------------------ */
+
+function currentRoute() {
+  const route = window.location.hash.slice(1).split("/").filter(Boolean);
+  return { page: route[0] || "dashboard", detail: route[1] || "" };
+}
+
+function routeKey() {
+  const { page, detail } = currentRoute();
+  return `${page}/${detail}`;
+}
+
+// Devolve true quando precisou trocar a rota; o hashchange seguinte faz o render.
+function setRouteForRole(role) {
+  const isEmployeeRoute = window.location.hash.startsWith("#employee/");
+  if (role === "EMPLOYEE" && !isEmployeeRoute) {
+    window.location.hash = "#employee/home";
+    return true;
+  }
+  if (role === "MANAGER" && isEmployeeRoute) {
+    window.location.hash = "#dashboard";
+    return true;
+  }
+  return false;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cabeçalho e notificações                                            */
+/* ------------------------------------------------------------------ */
+
+function isEmployeeRoute() {
+  return currentRoute().page === "employee";
+}
+
+function headerOptions(overrides = {}) {
+  return {
+    alerts: data.alerts,
+    readNotifications,
+    notificationsOpen,
+    notificationError,
+    role: isEmployeeRoute() ? "employee" : "manager",
+    ...overrides
+  };
+}
+
+// Antes, abrir as notificações ou marcá-las como lidas recriava o cabeçalho sem informar o perfil,
+// e o colaborador passava a ver o nome da unidade do gestor no lugar de "Minha jornada".
+function refreshHeader(overrides = {}) {
+  const headerData = isEmployeeRoute()
+    ? { ...data, user: { ...data.user, role: data.employee.role } }
+    : data;
+  renderHeader(document.querySelector("#header"), headerData, headerOptions(overrides));
+}
+
+// Abrir/fechar apenas alterna o painel existente, sem recriar o cabeçalho.
+function setNotificationsOpen(open, { restoreFocus = false } = {}) {
+  notificationsOpen = open;
+  const popover = document.querySelector("#notification-popover");
+  const toggle = document.querySelector("[data-toggle-notifications]");
+  if (!popover || !toggle) return;
+  if (open) popover.removeAttribute("data-instant");
+  popover.hidden = !open;
+  toggle.setAttribute("aria-expanded", String(open));
+  if (!open && restoreFocus) toggle.focus();
+}
 
 function persistReadNotifications(nextReadNotifications) {
   try {
-    saveReadNotifications(nextReadNotifications);
+    saveReadNotifications(nextReadNotifications, userKey());
     readNotifications = nextReadNotifications;
     notificationError = "";
     return true;
@@ -57,29 +219,35 @@ function persistReadNotifications(nextReadNotifications) {
   }
 }
 
-function currentRoute() {
-  const route = window.location.hash.slice(1).split("/").filter(Boolean);
-  return { page: route[0] || "dashboard", detail: route[1] || "" };
+/* ------------------------------------------------------------------ */
+/* Renderização                                                        */
+/* ------------------------------------------------------------------ */
+
+function replayPageEnter(element) {
+  if (prefersReducedMotion()) return;
+  element.classList.remove("page-enter");
+  void element.offsetWidth;
+  element.classList.add("page-enter");
 }
 
-function renderPage() {
+function scrollChatsToEnd() {
+  document.querySelectorAll(".employee-chat-log").forEach((log) => {
+    log.scrollTop = log.scrollHeight;
+  });
+}
+
+function renderPageContent() {
   const { page, detail } = currentRoute();
   const isEmployee = page === "employee";
   const employeePage = isEmployee ? detail || "home" : "";
   const activePage = isEmployee
     ? employeePage
     : page === "employees" ? "employees" : page === "alerts" ? "alerts" : page === "settings" ? "settings" : "dashboard";
-  const headerData = isEmployee
-    ? { ...data, user: { ...data.user, role: data.employee.role } }
-    : data;
-  renderSidebar(document.querySelector("#sidebar"), data, activePage, isEmployee ? "employee" : "manager");
-  renderHeader(document.querySelector("#header"), headerData, {
-    alerts: data.alerts,
-    readNotifications,
-    notificationsOpen,
-    notificationError,
-    role: isEmployee ? "employee" : "manager"
-  });
+  const role = isEmployee ? "employee" : "manager";
+
+  renderSidebar(document.querySelector("#sidebar"), data, activePage, role);
+  refreshHeader({ instant: true });
+
   const mainContent = document.querySelector("#main-content");
   document.querySelector("#sidebar").classList.toggle("sidebar-host--employee", isEmployee);
   document.querySelector(".workspace").classList.toggle("workspace--employee", isEmployee);
@@ -90,7 +258,8 @@ function renderPage() {
     if (employeePage === "settings") {
       renderSettingsPage(mainContent, data.user, theme);
     } else {
-      renderEmployeePage(mainContent, data, employeePage, data.employee.chat, employeeNotice, [...redeemedRewards]);
+      renderEmployeePage(mainContent, data, employeePage, data.employee.chat, employeeNotice, data.employee.redeemedRewardIds || []);
+      scrollChatsToEnd();
     }
   } else if (page === "settings") {
     renderSettingsPage(mainContent, data.user, theme);
@@ -101,10 +270,10 @@ function renderPage() {
     if (employee) {
       renderEmployeeDetails(mainContent, employee, data.alerts);
     } else {
-      mainContent.innerHTML = '<p class="dashboard-error" role="alert">Funcionario nao encontrado. <a href="#employees">Voltar para funcionarios</a></p>';
+      mainContent.innerHTML = '<p class="dashboard-error" role="alert">Funcionário não encontrado. <a href="#employees">Voltar para funcionários</a></p>';
     }
   } else if (page === "employees") {
-    renderEmployeesPage(mainContent, data.employees, employeeQuery, employeeSorts, employeeStatuses);
+    renderEmployeesPage(mainContent, data.employees, employeeQuery, employeeSorts, employeeStatuses, employeeSortPriority);
   } else if (page === "alerts") {
     renderAlertsPage(mainContent, data.alerts, alertQuery, alertFilters);
   } else {
@@ -115,6 +284,34 @@ function renderPage() {
     renderStatusChart(mainContent.querySelector("#status-chart"), data.monthlyStatus);
     renderUpdatesChart(mainContent.querySelector("#updates-chart"), data.topUpdates);
     renderRecentAlerts(mainContent.querySelector("#recent-alerts"), data.recentAlerts);
+  }
+}
+
+function renderPage({ focusChat = false, moveFocus = false } = {}) {
+  if (!data) return;
+  const mainContent = document.querySelector("#main-content");
+  const key = routeKey();
+  const routeChanged = key !== lastRouteKey;
+  lastRouteKey = key;
+
+  try {
+    renderPageContent();
+  } catch (error) {
+    // Um erro ao desenhar uma tela não pode deixar a aplicação em branco.
+    console.error("Não foi possível exibir a página.", error);
+    mainContent.innerHTML = `
+      <p class="dashboard-error" role="alert">
+        Não foi possível exibir esta página. ${escapeHtml(error.message)}
+        <button class="button button--muted" type="button" data-retry-render>Tentar novamente</button>
+      </p>`;
+  }
+
+  // A transição só acontece ao trocar de página, nunca em atualizações da mesma tela.
+  if (routeChanged) replayPageEnter(mainContent);
+  if (moveFocus) mainContent.focus({ preventScroll: true });
+  if (focusChat) {
+    const input = document.querySelector("#employee-message");
+    input?.focus({ preventScroll: true });
   }
 }
 
@@ -129,6 +326,12 @@ function showLogin(errorMessage = "") {
   error.textContent = errorMessage;
   error.hidden = !errorMessage;
   loginScreen.hidden = false;
+  loginScreen.querySelector('input[name="email"]')?.focus({ preventScroll: true });
+}
+
+function showApplication() {
+  document.querySelector("#login-screen").hidden = true;
+  document.querySelector(".app-layout").hidden = false;
 }
 
 function showPageError(message) {
@@ -140,186 +343,287 @@ function showPageError(message) {
   error.dataset.apiError = "";
   error.textContent = message;
   mainContent.prepend(error);
+  error.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
-async function reloadDashboard() {
-  data = await getDashboardData(getSession());
-  renderPage();
+function flashNotice(message) {
+  employeeNotice = message;
+  window.clearTimeout(noticeTimer);
+  // O aviso some sozinho; antes ele ficava na tela até o próximo login.
+  noticeTimer = window.setTimeout(() => {
+    employeeNotice = "";
+    document.querySelectorAll(".employee-notice").forEach((element) => {
+      element.classList.add("is-leaving");
+      window.setTimeout(() => element.remove(), 220);
+    });
+  }, 4500);
 }
 
-function showApplication() {
-  document.querySelector("#login-screen").hidden = true;
-  document.querySelector(".app-layout").hidden = false;
+/* ------------------------------------------------------------------ */
+/* Sessão e dados                                                      */
+/* ------------------------------------------------------------------ */
+
+function logout(message = "") {
+  clearSession();
+  data = undefined;
+  resetUiState();
+  document.querySelector("#sidebar")?.removeAttribute("data-signature");
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  showLogin(message);
 }
 
-function setRouteForRole(role) {
-  const isEmployeeRoute = window.location.hash.startsWith("#employee/");
-  if (role === "EMPLOYEE" && !isEmployeeRoute) {
-    window.location.hash = "#employee/home";
-  } else if (role === "MANAGER" && isEmployeeRoute) {
-    window.location.hash = "#dashboard";
+// Token expirado (401) leva de volta ao login em vez de deixar a tela com botões que falham.
+function handleActionError(error, fallbackHandler = showPageError) {
+  if (error?.status === 401) {
+    logout("Sua sessão expirou. Entre novamente.");
+    return;
+  }
+  fallbackHandler(error.message);
+}
+
+// Recarregar os dados não pode descartar o nome/e-mail que o usuário editou em Configurações
+// (antes eles voltavam ao valor da API após confirmar um alerta ou enviar uma mensagem).
+async function refreshData() {
+  const fresh = await withBusy(() => getDashboardData(getSession()));
+  data = applyUserSettings(fresh);
+}
+
+async function submitEmployeeMessage(content, { restoreInput } = {}) {
+  if (sendingMessage) return;
+  sendingMessage = true;
+  appendPendingMessage(content);
+  try {
+    await withBusy(() => sendEmployeeMessage(data.currentEmployee.id, content));
+    await refreshData();
+    flashNotice("Mensagem enviada.");
+    renderPage({ focusChat: true });
+  } catch (error) {
+    document.querySelector("[data-pending]")?.remove();
+    restoreInput?.();
+    handleActionError(error);
+  } finally {
+    sendingMessage = false;
   }
 }
 
-async function submitEmployeeMessage(content) {
+// A mensagem aparece na hora; o servidor confirma em seguida.
+function appendPendingMessage(text) {
+  const log = document.querySelector(".employee-chat-log");
+  if (!log) return;
+  log.querySelector(".employee-chat-empty")?.remove();
+  const message = document.createElement("article");
+  message.className = "employee-chat-message employee-chat-message--employee is-pending";
+  message.dataset.pending = "";
+  message.innerHTML = `<div class="employee-chat-message__body"><p>${escapeHtml(text)}</p><time>Enviando…</time></div>`;
+  log.append(message);
+  log.scrollTo({ top: log.scrollHeight, behavior: prefersReducedMotion() ? "auto" : "smooth" });
+}
+
+async function redeemRewardById(button) {
+  const reward = data.employee.rewards.find((item) => item.id === button.dataset.redeemReward);
+  const redeemed = data.employee.redeemedRewardIds || [];
+  if (!reward || redeemed.includes(reward.id) || data.employee.points < reward.points) return;
+
+  button.disabled = true;
   try {
-    await sendEmployeeMessage(data.currentEmployee.id, content);
-    data = await getDashboardData(getSession());
-    employeeNotice = "Mensagem enviada.";
+    // O resgate agora é gravado na API (lançamento negativo) e sobrevive ao recarregar a página.
+    await withBusy(() => redeemReward(data.currentEmployee.id, reward));
+    await refreshData();
+    flashNotice(`${reward.name} resgatado! Aproveite sua recompensa.`);
     renderPage();
   } catch (error) {
-    showPageError(error.message);
+    button.disabled = false;
+    handleActionError(error);
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Eventos                                                             */
+/* ------------------------------------------------------------------ */
 
 window.addEventListener("hashchange", () => {
   if (!data) return;
-  setRouteForRole(getSession()?.role);
+  // Se a rota era de outro perfil, o redirecionamento dispara um novo hashchange; evita renderizar a tela errada antes.
+  if (setRouteForRole(getSession()?.role)) return;
   notificationsOpen = false;
-  renderPage();
+  if (routeKey() === lastRouteKey) {
+    setNotificationsOpen(false);
+    return;
+  }
+  employeeNotice = "";
+  renderPage({ moveFocus: true });
   window.scrollTo(0, 0);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && notificationsOpen) {
+    setNotificationsOpen(false, { restoreFocus: true });
+  }
 });
 
 document.addEventListener("input", (event) => {
   if (event.target.matches("[data-search-employees]")) {
     employeeQuery = event.target.value;
-    renderPage();
-    const input = document.querySelector("[data-search-employees]");
-    input.focus();
-    input.setSelectionRange(employeeQuery.length, employeeQuery.length);
+    const main = document.querySelector("#main-content");
+    updateEmployeesResults(main, data.employees, employeeQuery, employeeSorts, employeeStatuses, employeeSortPriority);
   }
   if (event.target.matches("[data-search-alerts]")) {
     alertQuery = event.target.value;
-    renderPage();
-    const input = document.querySelector("[data-search-alerts]");
-    input.focus();
-    input.setSelectionRange(alertQuery.length, alertQuery.length);
+    const main = document.querySelector("#main-content");
+    updateAlertsResults(main, data.alerts, alertQuery, alertFilters);
   }
 });
 
 document.addEventListener("click", async (event) => {
-  if (event.target.closest("[data-logout]")) {
-    clearSession();
-    data = undefined;
-    showLogin();
+  const target = event.target;
+  const closest = (selector) => target.closest(selector);
+
+  if (closest("[data-logout]")) {
+    logout();
     return;
   }
-  if (notificationsOpen && !event.target.closest(".notification-popover, [data-toggle-notifications]")) {
-    notificationsOpen = false;
-    renderHeader(document.querySelector("#header"), data, {
-      alerts: data.alerts,
-      readNotifications,
-      notificationsOpen,
-      notificationError
-    });
+  if (closest("[data-skip-to-content]")) {
+    event.preventDefault();
+    document.querySelector("#main-content")?.focus();
+    return;
   }
-  if (event.target.closest("[data-toggle-notifications]")) {
-    notificationsOpen = !notificationsOpen;
-    renderHeader(document.querySelector("#header"), data, {
-      alerts: data.alerts,
-      readNotifications,
-      notificationsOpen,
-      notificationError
-    });
+  if (closest("[data-retry-render]")) {
+    renderPage();
+    return;
   }
-  const employeeAnswer = event.target.closest("[data-employee-answer]");
-  const employeeAction = event.target.closest("[data-employee-action]");
+
+  // Clique no fundo escurecido fecha o diálogo de filtros.
+  if (target instanceof HTMLDialogElement && target.open) {
+    const rect = target.getBoundingClientRect();
+    const inside = event.clientX >= rect.left && event.clientX <= rect.right
+      && event.clientY >= rect.top && event.clientY <= rect.bottom;
+    if (!inside) target.close();
+    return;
+  }
+
+  if (notificationsOpen && !closest(".notification-popover, [data-toggle-notifications]")) {
+    setNotificationsOpen(false);
+  }
+  if (closest("[data-toggle-notifications]")) {
+    setNotificationsOpen(!notificationsOpen);
+    return;
+  }
+
+  const employeeAnswer = closest("[data-employee-answer]");
+  const employeeAction = closest("[data-employee-action]");
   if (employeeAnswer || employeeAction) {
     const text = employeeAnswer?.dataset.employeeAnswer || employeeAction.dataset.employeeAction.replace(/^[^ ]+\s/, "");
     await submitEmployeeMessage(text);
+    return;
   }
-  const redeemButton = event.target.closest("[data-redeem-reward]");
+
+  const redeemButton = closest("[data-redeem-reward]");
   if (redeemButton) {
-    const reward = data.employee.rewards.find((item) => item.id === redeemButton.dataset.redeemReward);
-    if (reward && !redeemedRewards.has(reward.id) && data.employee.points >= reward.points) {
-      data.employee.points -= reward.points;
-      redeemedRewards.add(reward.id);
-      employeeNotice = `${reward.name} resgatado! Aproveite sua recompensa.`;
-      rerenderCurrentPage();
-    }
+    await redeemRewardById(redeemButton);
+    return;
   }
-  if (event.target.closest("[data-mark-all-read]")) {
-    const nextReadNotifications = new Set(data.alerts.map((alert) => alert.id));
-    persistReadNotifications(nextReadNotifications);
-    renderHeader(document.querySelector("#header"), data, {
-      alerts: data.alerts,
-      readNotifications,
-      notificationsOpen,
-      notificationError
-    });
+
+  if (closest("[data-mark-all-read]")) {
+    persistReadNotifications(new Set(data.alerts.map((alert) => alert.id)));
+    refreshHeader({ instant: true });
+    return;
   }
-  const notificationButton = event.target.closest("[data-open-notification]");
+
+  const notificationButton = closest("[data-open-notification]");
   if (notificationButton) {
     const nextReadNotifications = new Set(readNotifications);
     nextReadNotifications.add(notificationButton.dataset.openNotification);
     persistReadNotifications(nextReadNotifications);
     notificationsOpen = false;
-    renderHeader(document.querySelector("#header"), data, {
-      alerts: data.alerts,
-      readNotifications,
-      notificationsOpen,
-      notificationError
-    });
+    refreshHeader({ instant: true });
     window.location.hash = "#alerts";
+    return;
   }
-  const openButton = event.target.closest("[data-open-dialog]");
+
+  const openButton = closest("[data-open-dialog]");
   if (openButton) {
-    document.querySelector(`[data-filter-dialog="${openButton.dataset.openDialog}"]`).showModal();
-    openButton.setAttribute("aria-expanded", "true");
+    const dialog = document.querySelector(`[data-filter-dialog="${openButton.dataset.openDialog}"]`);
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      openButton.setAttribute("aria-expanded", "true");
+    }
+    return;
   }
-  if (event.target.closest("[data-close-dialog]")) {
-    event.target.closest("dialog").close();
+  if (closest("[data-close-dialog]")) {
+    closest("dialog").close();
+    return;
   }
-  if (event.target.closest("[data-select-all-employee-status]")) {
-    const dialog = event.target.closest("[data-filter-dialog='employee-status-filter']");
+
+  if (closest("[data-select-all-employee-status]")) {
+    const dialog = closest("[data-filter-dialog='employee-status-filter']");
     dialog.querySelectorAll("[data-employee-status-filter]").forEach((input) => {
       input.checked = true;
     });
+    return;
   }
-  const applyEmployeeSort = event.target.closest("[data-apply-employee-sort]");
+
+  const applyEmployeeSort = closest("[data-apply-employee-sort]");
   if (applyEmployeeSort) {
     const dialog = applyEmployeeSort.closest("[data-filter-dialog]");
     const selected = dialog.querySelector("[data-employee-sort-direction]:checked");
     if (selected) {
-      employeeSorts[applyEmployeeSort.dataset.applyEmployeeSort] = selected.value;
+      const sort = applyEmployeeSort.dataset.applyEmployeeSort;
+      employeeSorts[sort] = selected.value;
+      // O critério escolhido passa a ser o principal da ordenação.
+      employeeSortPriority = [sort, ...employeeSortPriority.filter((item) => item !== sort)];
       dialog.close();
-      rerenderCurrentPage();
+      updateEmployeesResults(document.querySelector("#main-content"), data.employees, employeeQuery, employeeSorts, employeeStatuses, employeeSortPriority);
     }
+    return;
   }
-  if (event.target.closest("[data-apply-employee-status]")) {
-    const dialog = event.target.closest("[data-filter-dialog='employee-status-filter']");
+
+  if (closest("[data-apply-employee-status]")) {
+    const dialog = closest("[data-filter-dialog='employee-status-filter']");
     employeeStatuses = [...dialog.querySelectorAll("[data-employee-status-filter]:checked")].map((input) => input.value);
     dialog.close();
     rerenderCurrentPage();
+    return;
   }
-  const confirmButton = event.target.closest("[data-confirm-alert]");
+
+  const confirmButton = closest("[data-confirm-alert]");
   if (confirmButton) {
     confirmButton.disabled = true;
+    confirmButton.classList.add("is-loading");
     try {
-      await confirmAlert(confirmButton.dataset.confirmAlert);
-      await reloadDashboard();
+      await withBusy(() => confirmAlert(confirmButton.dataset.confirmAlert));
+      await refreshData();
+      // Só a lista e o contador de notificações mudam; os filtros e a busca continuam como estavam.
+      if (!updateAlertsResults(document.querySelector("#main-content"), data.alerts, alertQuery, alertFilters)) {
+        renderPage();
+      }
+      refreshHeader({ instant: true });
     } catch (error) {
       confirmButton.disabled = false;
-      showPageError(error.message);
+      confirmButton.classList.remove("is-loading");
+      handleActionError(error);
     }
+    return;
   }
-  if (event.target.closest("[data-clear-filters]")) {
+
+  if (closest("[data-clear-filters]")) {
     alertQuery = "";
     alertFilters = { statuses: [] };
     rerenderCurrentPage();
+    return;
   }
-  if (event.target.closest("[data-clear-status]")) {
+  if (closest("[data-clear-status]")) {
     alertFilters.statuses = [];
     rerenderCurrentPage();
+    return;
   }
-  if (event.target.closest("[data-clear-confirmation]")) {
+  if (closest("[data-clear-confirmation]")) {
     delete alertFilters.confirmation;
     rerenderCurrentPage();
   }
 });
 
 document.addEventListener("close", (event) => {
-  const dialog = event.target.closest("[data-filter-dialog]");
+  const dialog = event.target.closest?.("[data-filter-dialog]");
   if (dialog) {
     document.querySelector(`[data-open-dialog="${dialog.dataset.filterDialog}"]`)?.setAttribute("aria-expanded", "false");
   }
@@ -341,20 +645,24 @@ document.addEventListener("submit", async (event) => {
   if (loginForm) {
     event.preventDefault();
     const button = loginForm.querySelector('button[type="submit"]');
+    const idleLabel = button.textContent;
     const values = new FormData(loginForm);
     button.disabled = true;
+    button.textContent = "Entrando…";
     try {
-      data = await loginAndLoadDashboard(
+      resetUiState();
+      const nextData = await withBusy(() => loginAndLoadDashboard(
         String(values.get("email")).trim(),
         String(values.get("password"))
-      );
+      ));
+      data = applyUserSettings(nextData);
+      loginForm.reset();
       setRouteForRole(getSession().role);
-      const settings = loadUserSettings(data.user);
-      data.user.name = settings.name;
-      data.user.email = settings.email;
-      theme = settings.theme;
-      document.documentElement.dataset.theme = theme;
-      readNotifications = loadReadNotifications();
+      readNotifications = withFallback(
+        () => loadReadNotifications(userKey()),
+        new Set(),
+        "Não foi possível ler as notificações lidas."
+      );
       showApplication();
       renderPage();
     } catch (error) {
@@ -364,6 +672,7 @@ document.addEventListener("submit", async (event) => {
         : error.message);
     } finally {
       button.disabled = false;
+      button.textContent = idleLabel;
     }
     return;
   }
@@ -373,10 +682,17 @@ document.addEventListener("submit", async (event) => {
     event.preventDefault();
     const input = chatForm.elements.message;
     const text = input.value.trim();
-    if (!text) return;
-    await submitEmployeeMessage(text);
+    if (!text || sendingMessage) return;
+    input.value = "";
+    await submitEmployeeMessage(text, {
+      restoreInput: () => {
+        const current = document.querySelector("#employee-message");
+        if (current && !current.value) current.value = text;
+      }
+    });
     return;
   }
+
   const pillQuiz = event.target.closest("[data-pill-quiz]");
   if (pillQuiz) {
     event.preventDefault();
@@ -395,12 +711,16 @@ document.addEventListener("submit", async (event) => {
     const button = pillQuiz.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      await completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz));
-      data = await getDashboardData(getSession());
-      employeeNotice = "Resposta correta! Pílula concluída.";
+      await withBusy(() => completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz)));
+      await refreshData();
+      flashNotice("Resposta correta! Pílula concluída.");
       renderPage();
     } catch (error) {
       button.disabled = false;
+      if (error.status === 401) {
+        logout("Sua sessão expirou. Entre novamente.");
+        return;
+      }
       feedback.textContent = error.status === 409
         ? "Esta pílula já consta como concluída. Atualize a tela para ver seu progresso."
         : error.message;
@@ -408,6 +728,7 @@ document.addEventListener("submit", async (event) => {
     }
     return;
   }
+
   const profileForm = event.target.closest("[data-profile-form]");
   if (profileForm) {
     event.preventDefault();
@@ -416,19 +737,10 @@ document.addEventListener("submit", async (event) => {
     const email = String(values.get("email")).trim();
     const message = profileForm.querySelector("[data-profile-message]");
     try {
-      saveUserSettings({ name, email, theme });
+      saveUserSettings({ name, email, theme }, userKey());
       data.user.name = name;
       data.user.email = email;
-      const isEmployee = currentRoute().page === "employee";
-      const headerData = isEmployee
-        ? { ...data, user: { ...data.user, role: data.employee.role } }
-        : data;
-      renderHeader(document.querySelector("#header"), headerData, {
-        alerts: data.alerts,
-        readNotifications,
-        notificationsOpen,
-        role: isEmployee ? "employee" : "manager"
-      });
+      refreshHeader({ instant: true });
       message.textContent = "Perfil atualizado neste navegador.";
       message.classList.remove("settings-message--error");
     } catch (error) {
@@ -458,13 +770,21 @@ document.addEventListener("submit", async (event) => {
     consent: values.has("consent")
   };
   const submitButton = form.querySelector('button[type="submit"]');
+  const idleLabel = submitButton.textContent;
   submitButton.disabled = true;
+  submitButton.textContent = "Cadastrando…";
   try {
-    const createdEmployee = await createEmployee(payload);
-    await reloadDashboard();
+    const createdEmployee = await withBusy(() => createEmployee(payload));
+    await refreshData();
+    // A navegação dispara o render da nova tela; antes a página era desenhada duas vezes.
     window.location.hash = `#employees/${createdEmployee.id}`;
   } catch (error) {
     submitButton.disabled = false;
+    submitButton.textContent = idleLabel;
+    if (error.status === 401) {
+      logout("Sua sessão expirou. Entre novamente.");
+      return;
+    }
     let message = form.querySelector("[data-form-error]");
     if (!message) {
       message = document.createElement("p");
@@ -474,6 +794,7 @@ document.addEventListener("submit", async (event) => {
       form.prepend(message);
     }
     message.textContent = error.message;
+    message.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }
 });
 
@@ -485,9 +806,9 @@ document.addEventListener("change", (event) => {
       name: data.user.name,
       email: data.user.email,
       theme: selectedTheme
-    });
-    theme = selectedTheme;
-    document.documentElement.dataset.theme = theme;
+    }, userKey());
+    applyTheme(selectedTheme);
+    // Os gráficos leem as cores do tema ao serem criados, então o dashboard é redesenhado.
     if (currentRoute().page === "dashboard") renderPage();
   } catch (error) {
     console.error("Não foi possível salvar a preferência de tema.", error);
@@ -497,37 +818,50 @@ document.addEventListener("change", (event) => {
       message.classList.add("settings-message--error");
     }
     event.target.checked = false;
-    const previousTheme = theme;
-    const previousOption = document.querySelector(`input[name="theme"][value="${previousTheme}"]`);
+    const previousOption = document.querySelector(`input[name="theme"][value="${theme}"]`);
     if (previousOption) previousOption.checked = true;
   }
 });
 
+/* ------------------------------------------------------------------ */
+/* Inicialização                                                       */
+/* ------------------------------------------------------------------ */
+
 async function initialize() {
-  const session = getSession();
+  applyTheme(withFallback(loadTheme, "light", "Não foi possível ler o tema."), { animate: false });
+
+  let session;
+  try {
+    session = getSession();
+  } catch (error) {
+    showLogin(error.message);
+    return;
+  }
   if (!session) {
     showLogin();
     return;
   }
 
   try {
-    data = await getDashboardData(session);
+    data = applyUserSettings(await getDashboardData(session));
     setRouteForRole(session.role);
-    const settings = loadUserSettings(data.user);
-    data.user.name = settings.name;
-    data.user.email = settings.email;
-    theme = settings.theme;
-    document.documentElement.dataset.theme = theme;
-    readNotifications = loadReadNotifications();
+    readNotifications = withFallback(
+      () => loadReadNotifications(userKey()),
+      new Set(),
+      "Não foi possível ler as notificações lidas."
+    );
     showApplication();
     renderPage();
   } catch (error) {
+    data = undefined;
     clearSession();
-    showLogin(error.message);
+    showLogin(error.status === 401 ? "Sua sessão expirou. Entre novamente." : error.message);
   }
 }
 
-initialize().catch((error) => {
-  console.error("Não foi possível carregar o dashboard JourneyFlow.", error);
-  showLogin(error.message);
-});
+initialize()
+  .catch((error) => {
+    console.error("Não foi possível carregar o dashboard JourneyFlow.", error);
+    showLogin(error.message);
+  })
+  .finally(hideBoot);
