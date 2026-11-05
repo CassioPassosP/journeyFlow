@@ -180,6 +180,7 @@ async function getEmployeeDashboardData(session) {
     .map((entry) => ({
       author: entry.sender === "USER" ? "employee" : "bot",
       text: entry.content,
+      pillId: entry.pillId,
       time: formatDateTime(entry.dateSent || entry.createdAt)
     }));
 
@@ -210,18 +211,19 @@ export async function createEmployee(payload) {
   return apiRequest("/employee", { method: "POST", body: payload });
 }
 
-export async function sendEmployeeMessage(employeeId, content) {
+export async function sendEmployeeMessage(employeeId, content, pillId = null) {
   return apiRequest("/chat", {
     method: "POST",
-    body: { employeeId, sender: "USER", content, source: "TEXT" }
+    body: { employeeId, sender: "USER", content, source: "TEXT", pillId }
   });
 }
 
-export async function completePill(employeeId, pillId) {
-  return apiRequest("/pillprogress", {
-    method: "POST",
-    body: { employeeId, pillId }
-  });
+export async function startEmployeePillQuiz(employeeId) {
+  return apiRequest(`/chat/quiz/${encodeURIComponent(employeeId)}`, { method: "POST" });
+}
+
+export async function finishEmployeeConversation(employeeId) {
+  return apiRequest(`/chat/finish/${encodeURIComponent(employeeId)}`, { method: "POST" });
 }
 
 export async function confirmAlert(alertId) {

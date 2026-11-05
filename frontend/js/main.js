@@ -1,10 +1,11 @@
 import {
   confirmAlert,
-  completePill,
   createEmployee,
   getDashboardData,
   loginAndLoadDashboard,
-  sendEmployeeMessage
+  sendEmployeeMessage,
+  startEmployeePillQuiz,
+  finishEmployeeConversation
 } from "./services/data-service.js";
 import { clearSession, getSession } from "./services/api-client.js";
 import { renderSidebar } from "./components/sidebar.js";
@@ -62,7 +63,9 @@ function currentRoute() {
   return { page: route[0] || "dashboard", detail: route[1] || "" };
 }
 
-function renderPage() {
+function renderPage({ preserveChatScroll = false } = {}) {
+  const viewportX = window.scrollX;
+  const viewportY = window.scrollY;
   const { page, detail } = currentRoute();
   const isEmployee = page === "employee";
   const employeePage = isEmployee ? detail || "home" : "";
@@ -116,6 +119,14 @@ function renderPage() {
     renderUpdatesChart(mainContent.querySelector("#updates-chart"), data.topUpdates);
     renderRecentAlerts(mainContent.querySelector("#recent-alerts"), data.recentAlerts);
   }
+  const shouldShowLatestChat = isEmployee && (employeePage === "conversation" || employeePage === "home");
+  if (preserveChatScroll || shouldShowLatestChat) {
+    requestAnimationFrame(() => {
+      const chatLog = document.querySelector(".employee-chat-log");
+      if (chatLog) chatLog.scrollTop = chatLog.scrollHeight;
+      if (preserveChatScroll) window.scrollTo(viewportX, viewportY);
+    });
+  }
 }
 
 function rerenderCurrentPage() {
@@ -161,13 +172,17 @@ function setRouteForRole(role) {
   }
 }
 
-async function submitEmployeeMessage(content) {
+async function submitEmployeeMessage(content, pillId = null) {
+  employeeNotice = "JourneyFlow está respondendo…";
+  renderPage({ preserveChatScroll: true });
   try {
-    await sendEmployeeMessage(data.currentEmployee.id, content);
+    await sendEmployeeMessage(data.currentEmployee.id, content, pillId);
     data = await getDashboardData(getSession());
-    employeeNotice = "Mensagem enviada.";
-    renderPage();
+    employeeNotice = "";
+    renderPage({ preserveChatScroll: true });
   } catch (error) {
+    employeeNotice = "";
+    renderPage({ preserveChatScroll: true });
     showPageError(error.message);
   }
 }
@@ -226,7 +241,30 @@ document.addEventListener("click", async (event) => {
   const employeeAction = event.target.closest("[data-employee-action]");
   if (employeeAnswer || employeeAction) {
     const text = employeeAnswer?.dataset.employeeAnswer || employeeAction.dataset.employeeAction.replace(/^[^ ]+\s/, "");
-    await submitEmployeeMessage(text);
+    await submitEmployeeMessage(text, employeeAnswer?.dataset.employeePillId || null);
+  }
+  if (event.target.closest("[data-employee-start-quiz]")) {
+    try {
+      await startEmployeePillQuiz(data.currentEmployee.id);
+      data = await getDashboardData(getSession());
+      employeeNotice = "Atividade atualizada.";
+      renderPage({ preserveChatScroll: true });
+    } catch (error) {
+      showPageError(error.message);
+    }
+  }
+  if (event.target.closest("[data-employee-finish]")) {
+    const button = event.target.closest("[data-employee-finish]");
+    button.disabled = true;
+    try {
+      await finishEmployeeConversation(data.currentEmployee.id);
+      data = await getDashboardData(getSession());
+      employeeNotice = "Análise da conversa concluída.";
+      renderPage({ preserveChatScroll: true });
+    } catch (error) {
+      button.disabled = false;
+      showPageError(error.message);
+    }
   }
   const redeemButton = event.target.closest("[data-redeem-reward]");
   if (redeemButton) {
@@ -375,37 +413,6 @@ document.addEventListener("submit", async (event) => {
     const text = input.value.trim();
     if (!text) return;
     await submitEmployeeMessage(text);
-    return;
-  }
-  const pillQuiz = event.target.closest("[data-pill-quiz]");
-  if (pillQuiz) {
-    event.preventDefault();
-    const feedback = pillQuiz.querySelector("[data-pill-feedback]");
-    const answer = new FormData(pillQuiz).get("answer");
-    if (answer === null) {
-      feedback.textContent = "Selecione uma resposta antes de continuar.";
-      feedback.hidden = false;
-      return;
-    }
-    if (Number(answer) !== Number(pillQuiz.dataset.correctAnswer)) {
-      feedback.textContent = "Essa resposta não está correta. Revise o conteúdo e tente novamente.";
-      feedback.hidden = false;
-      return;
-    }
-    const button = pillQuiz.querySelector('button[type="submit"]');
-    button.disabled = true;
-    try {
-      await completePill(data.currentEmployee.id, Number(pillQuiz.dataset.pillQuiz));
-      data = await getDashboardData(getSession());
-      employeeNotice = "Resposta correta! Pílula concluída.";
-      renderPage();
-    } catch (error) {
-      button.disabled = false;
-      feedback.textContent = error.status === 409
-        ? "Esta pílula já consta como concluída. Atualize a tela para ver seu progresso."
-        : error.message;
-      feedback.hidden = false;
-    }
     return;
   }
   const profileForm = event.target.closest("[data-profile-form]");

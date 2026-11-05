@@ -16,4 +16,6 @@ public interface ReportsRepository extends JpaRepository<ReportsEntity, Long> {
     Page<ReportsEntity> findByStatus(ReportStatus status, Pageable pageable);
 
     Page<ReportsEntity> findByEmployeeIdAndStatus(UUID employeeId, ReportStatus status, Pageable pageable);
+
+    boolean existsByEmployeeIdAndOriginalText(UUID employeeId, String originalText);
 }

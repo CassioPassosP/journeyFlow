@@ -27,7 +27,7 @@ public class ChatEntity {
     @Column(name = "sender", nullable = false)
     private MessageSender sender;
 
-    @Column(name = "content", nullable = false)
+    @Column(name = "content", nullable = false, columnDefinition = "text")
     private String content;
 
     @Enumerated(EnumType.STRING)
@@ -48,4 +48,8 @@ public class ChatEntity {
 
     @Column(name = "date_sent", nullable = false)
     private Instant dateSent;
+
+    // Preenchido apenas em mensagens que apresentam ou respondem a um quiz de pílula.
+    @Column(name = "pill_id")
+    private Long pillId;
 }

@@ -218,6 +218,29 @@
   max-height: 23rem;
   overflow: auto;
   padding: 0.2rem;
+  scrollbar-color: #77839a transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.employee-chat-log::-webkit-scrollbar {
+  width: 0.65rem;
+}
+
+.employee-chat-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.employee-chat-log::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  background: #77839a;
+  background-clip: content-box;
+}
+
+.employee-chat-log::-webkit-scrollbar-thumb:hover {
+  background: #aab4c5;
+  background-clip: content-box;
 }
 
 .employee-chat-message {

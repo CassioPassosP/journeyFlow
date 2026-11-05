@@ -29,6 +29,17 @@ public class ChatController {
         return chatService.createChat(request);
     }
 
+    @PostMapping("/quiz/{employeeId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ChatResponseDto startQuiz(@PathVariable UUID employeeId) {
+        return chatService.startPillQuiz(employeeId);
+    }
+
+    @PostMapping("/finish/{employeeId}")
+    public ChatResponseDto finish(@PathVariable UUID employeeId) {
+        return chatService.finishConversation(employeeId);
+    }
+
     /** GET /chat?employeeId=...&page=0&size=20 (mais recentes primeiro). */
     @GetMapping
     public PageResponseDto<ChatResponseDto> findAll(
