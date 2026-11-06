@@ -1,6 +1,6 @@
 import { escapeHtml, iconMarkup } from "../utils/dom.js";
 
-export function renderHeader(container, data, { alerts, readNotifications, notificationsOpen = false, notificationError = "", role = "manager" }) {
+export function renderHeader(container, data, { alerts, readNotifications, notificationsOpen = false, notificationError = "", role = "manager", instant = false }) {
   const firstName = data.user.name.trim().split(/\s+/)[0];
   const initials = data.user.name
     .trim()
@@ -28,11 +28,11 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
         <p class="header__updated">${escapeHtml(role === "employee" ? "Seu espaço de desenvolvimento" : `Atualizado ${data.unit.updatedAt}`)}</p>
       </div>
       <div class="header__account">
-        <button class="header__notifications" type="button" data-toggle-notifications aria-label="Notificações${unreadCount ? `, ${unreadCount} não lidas` : ""}" aria-expanded="${notificationsOpen}" aria-controls="notification-popover">
+        <button class="header__notifications" type="button" data-toggle-notifications aria-haspopup="true" aria-label="Notificações${unreadCount ? `, ${unreadCount} não lidas` : ""}" aria-expanded="${notificationsOpen}" aria-controls="notification-popover">
           ${iconMarkup("bell")}
           ${unreadCount ? `<span class="header__badge" aria-hidden="true">${escapeHtml(unreadCount)}</span>` : ""}
         </button>
-        <section id="notification-popover" class="notification-popover" aria-label="Notificações" ${notificationsOpen ? "" : "hidden"}>
+        <section id="notification-popover" class="notification-popover" aria-label="Notificações"${instant ? " data-instant" : ""} ${notificationsOpen ? "" : "hidden"}>
           <div class="notification-popover__heading">
             <h2>Notificações</h2>
             <button type="button" data-mark-all-read${unreadCount ? "" : " disabled"}>Marcar todas como lidas</button>

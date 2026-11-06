@@ -1,5 +1,6 @@
 const SESSION_KEY = "journeyflow.api-session";
 const API_PREFIX = "/__api";
+const REQUEST_TIMEOUT_MS = 20000;
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -16,6 +17,7 @@ export function getSession() {
   try {
     return JSON.parse(value);
   } catch (error) {
+    window.sessionStorage.removeItem(SESSION_KEY);
     throw new Error("A sessão salva está inválida. Entre novamente.", { cause: error });
   }
 }
@@ -38,33 +40,45 @@ export async function apiRequest(path, { method = "GET", body, authenticated = t
     headers.Authorization = `Bearer ${session.token}`;
   }
 
-  let response;
+  // Sem timeout, uma API parada deixa a tela "carregando" para sempre.
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   try {
-    response = await fetch(`${API_PREFIX}${path}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
-  } catch (error) {
-    throw new ApiError("Não foi possível conectar ao backend. Verifique se a API está em execução.", 0);
+    let response;
+    try {
+      response = await fetch(`${API_PREFIX}${path}`, {
+        method,
+        headers,
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new ApiError("O servidor demorou demais para responder. Tente novamente.", 0);
+      }
+      throw new ApiError("Não foi possível conectar ao backend. Verifique se a API está em execução.", 0);
+    }
+
+    if (response.status === 204) return null;
+
+    const contentType = response.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json")
+      ? await response.json()
+      : await response.text();
+
+    if (!response.ok) {
+      if (response.status === 401 && authenticated) clearSession();
+      const message = typeof payload === "object" && payload !== null
+        ? payload.message || payload.detail || payload.error
+        : payload;
+      throw new ApiError(message || `Falha na API (${response.status}).`, response.status);
+    }
+
+    return payload;
+  } finally {
+    window.clearTimeout(timer);
   }
-
-  if (response.status === 204) return null;
-
-  const contentType = response.headers.get("content-type") || "";
-  const payload = contentType.includes("application/json")
-    ? await response.json()
-    : await response.text();
-
-  if (!response.ok) {
-    if (response.status === 401) clearSession();
-    const message = typeof payload === "object" && payload !== null
-      ? payload.message || payload.detail || payload.error
-      : payload;
-    throw new ApiError(message || `Falha na API (${response.status}).`, response.status);
-  }
-
-  return payload;
 }
 
 export async function login(email, password) {

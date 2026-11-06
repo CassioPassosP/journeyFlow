@@ -20,7 +20,8 @@ public record RegisterRequestDto(
 ) {
     public enum Role {
         EMPLOYEE,
-        MANAGER
+        MANAGER,
+        RH
     }
 
     @Override

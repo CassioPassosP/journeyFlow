@@ -12,11 +12,14 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .settings-panel h2 {
   margin: 0;
   font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
 }
 
 .settings-panel > p {
@@ -27,19 +30,22 @@
 
 .settings-panel > label {
   display: grid;
-  gap: var(--space-2);
+  gap: 0.4rem;
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .settings-panel input:not([type="radio"]) {
   width: 100%;
   min-height: 2.6rem;
   padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  font-size: var(--font-size-sm);
 }
 
 .settings-panel__footer {
@@ -70,7 +76,9 @@
 
 .theme-options legend {
   margin-bottom: var(--space-2);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .theme-options label {
@@ -80,10 +88,11 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
 .theme-options label:has(input:checked) {

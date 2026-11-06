@@ -2,6 +2,7 @@ package com.journeyflow.services;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +25,7 @@ import com.journeyflow.models.ManagerEntity;
 import com.journeyflow.models.ReportsEntity;
 import com.journeyflow.models.StoreEntity;
 import com.journeyflow.models.enums.AlertStatus;
+import com.journeyflow.models.enums.AlertDestination;
 import com.journeyflow.repositories.AlertRepository;
 import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.ManagerRepository;
@@ -46,17 +48,38 @@ public class AlertService {
     private final Clock clock;
 
     @Transactional
-    public AlertResponseDto createAlert(AlertCreateRequestDto dto) {
-        ReportsEntity report = findReport(dto.reportId());
+    public AlertResponseDto createAlert(AlertCreateRequestDto dto, String actorEmail) {
+        ManagerEntity actor = requireManager(actorEmail);
+        assertDestination(actor, dto.destination());
+        if (!actor.getStore().getId().equals(dto.storeId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você só pode criar alertas na sua unidade");
+        }
+
+        ReportsEntity report = dto.reportId() == null ? null : findReport(dto.reportId());
+        if (report == null && dto.employeeId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Informe o funcionário ou um relatório para o alerta");
+        }
+        EmployeeEntity employee = dto.employeeId() == null
+                ? findEmployee(report.getEmployeeId())
+                : findEmployee(dto.employeeId());
+        if (report != null && !report.getEmployeeId().equals(employee.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "O funcionário informado não corresponde ao relatório");
+        }
         StoreEntity store = findStore(dto.storeId());
-        assertReportBelongsToStore(report, store);
+        if (!store.getId().equals(employee.getStore().getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "A loja informada não é a loja do colaborador do alerta");
+        }
 
         AlertEntity alert = new AlertEntity();
         alert.setReport(report);
+        alert.setEmployeeId(employee.getId());
         alert.setStore(store);
         alert.setAssignedTo(dto.assignedManagerId() == null
                 ? null
-                : findManagerOfStore(dto.assignedManagerId(), store.getId()));
+                : findManagerOfStore(dto.assignedManagerId(), store.getId(), dto.destination()));
         alert.setDestination(dto.destination());
         alert.setSuggestion(dto.suggestion());
         alert.setUrgency(dto.urgency());
@@ -69,16 +92,19 @@ public class AlertService {
     }
 
     @Transactional
-    public AlertResponseDto assignManager(Long id, AlertAssignRequestDto dto) {
+    public AlertResponseDto assignManager(Long id, AlertAssignRequestDto dto, String actorEmail) {
         AlertEntity alert = findAlert(id);
-        alert.setAssignedTo(findManagerOfStore(dto.managerId(), alert.getStore().getId()));
+        assertAlertAccess(alert, requireManager(actorEmail));
+        alert.setAssignedTo(findManagerOfStore(
+                dto.managerId(), alert.getStore().getId(), alert.getDestination()));
 
         return AlertResponseDto.from(alert);
     }
 
     @Transactional
-    public AlertResponseDto updateConfirmed(Long id, AlertConfirmedUpdateRequestDto dto) {
+    public AlertResponseDto updateConfirmed(Long id, AlertConfirmedUpdateRequestDto dto, String actorEmail) {
         AlertEntity alert = findAlert(id);
+        assertAlertAccess(alert, requireManager(actorEmail));
         alert.setConfirmed(dto.confirmed());
 
         return AlertResponseDto.from(alert);
@@ -89,8 +115,9 @@ public class AlertService {
      * DONE marca confirmed. Voltar para OPEN limpa os dois.
      */
     @Transactional
-    public AlertResponseDto updateStatus(Long id, AlertStatusUpdateRequestDto dto) {
+    public AlertResponseDto updateStatus(Long id, AlertStatusUpdateRequestDto dto, String actorEmail) {
         AlertEntity alert = findAlert(id);
+        assertAlertAccess(alert, requireManager(actorEmail));
         AlertStatus newStatus = dto.status();
 
         if (alert.getStatus() != newStatus) {
@@ -107,30 +134,34 @@ public class AlertService {
     }
 
     @Transactional
-    public void deleteAlert(Long id) {
-        alertRepository.delete(findAlert(id));
+    public void deleteAlert(Long id, String actorEmail) {
+        AlertEntity alert = findAlert(id);
+        assertAlertAccess(alert, requireManager(actorEmail));
+        alertRepository.delete(alert);
     }
 
     @Transactional(readOnly = true)
-    public PageResponseDto<AlertResponseDto> findAlerts(Long storeId, AlertStatus status, Pageable pageable) {
+    public PageResponseDto<AlertResponseDto> findAlerts(
+            Long requestedStoreId, AlertStatus status, Pageable pageable, String actorEmail) {
+        ManagerEntity actor = requireManager(actorEmail);
+        Long storeId = actor.getStore().getId();
+        if (requestedStoreId != null && !requestedStoreId.equals(storeId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você só pode consultar alertas da sua unidade");
+        }
+        AlertDestination destination = destinationFor(actor);
         Pageable page = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), DEFAULT_SORT);
 
-        Page<AlertEntity> result;
-        if (storeId != null && status != null) {
-            result = alertRepository.findByStoreIdAndStatus(storeId, status, page);
-        } else if (storeId != null) {
-            result = alertRepository.findByStoreId(storeId, page);
-        } else if (status != null) {
-            result = alertRepository.findByStatus(status, page);
-        } else {
-            result = alertRepository.findAll(page);
-        }
+        Page<AlertEntity> result = status == null
+                ? alertRepository.findByStoreIdAndDestination(storeId, destination, page)
+                : alertRepository.findByStoreIdAndDestinationAndStatus(storeId, destination, status, page);
         return PageResponseDto.from(result, AlertResponseDto::from);
     }
 
     @Transactional(readOnly = true)
-    public AlertResponseDto findAlertById(Long id) {
-        return AlertResponseDto.from(findAlert(id));
+    public AlertResponseDto findAlertById(Long id, String actorEmail) {
+        AlertEntity alert = findAlert(id);
+        assertAlertAccess(alert, requireManager(actorEmail));
+        return AlertResponseDto.from(alert);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -151,25 +182,57 @@ public class AlertService {
     }
 
     /** O gerente responsável precisa ser da mesma loja do alerta. */
-    private ManagerEntity findManagerOfStore(Long managerId, Long storeId) {
+    private ManagerEntity findManagerOfStore(Long managerId, Long storeId, AlertDestination destination) {
         ManagerEntity manager = managerRepository.findById(managerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente não encontrado"));
 
         if (!storeId.equals(manager.getStore().getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O gerente não pertence à loja do alerta");
         }
+        String position = manager.getPosition().trim();
+        boolean eligible = destination == AlertDestination.HR
+                ? position.equalsIgnoreCase("RH") || position.equalsIgnoreCase("HR")
+                : position.equalsIgnoreCase("MANAGER") || position.equalsIgnoreCase("GERENTE");
+        if (!eligible) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "O responsável não possui o papel exigido pelo destino do alerta");
+        }
         return manager;
     }
 
-    /** A loja do alerta deve ser a loja do colaborador que fez o relato. */
-    private void assertReportBelongsToStore(ReportsEntity report, StoreEntity store) {
-        EmployeeEntity employee = employeeRepository.findById(report.getEmployeeId())
+    private ManagerEntity requireManager(String email) {
+        return managerRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Funcionário do relato não encontrado"));
+                        HttpStatus.FORBIDDEN, "Somente gestores podem acessar alertas"));
+    }
 
-        if (!store.getId().equals(employee.getStore().getId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "A loja informada não é a loja do colaborador que fez o relato");
+    private static AlertDestination destinationFor(ManagerEntity manager) {
+        String position = manager.getPosition().trim();
+        if (position.equalsIgnoreCase("RH") || position.equalsIgnoreCase("HR")) {
+            return AlertDestination.HR;
         }
+        if (position.equalsIgnoreCase("MANAGER") || position.equalsIgnoreCase("GERENTE")) {
+            return AlertDestination.MANAGER;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seu papel não possui acesso a alertas");
+    }
+
+    private static void assertDestination(ManagerEntity manager, AlertDestination destination) {
+        if (destinationFor(manager) != destination) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Você não pode criar alertas para este destino");
+        }
+    }
+
+    private static void assertAlertAccess(AlertEntity alert, ManagerEntity manager) {
+        if (!alert.getStore().getId().equals(manager.getStore().getId())
+                || destinationFor(manager) != alert.getDestination()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não pode acessar este alerta");
+        }
+    }
+
+    private EmployeeEntity findEmployee(UUID employeeId) {
+        return employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
     }
 }

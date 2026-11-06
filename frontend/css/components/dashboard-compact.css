@@ -1,185 +1,35 @@
-.main-content--dashboard .greeting {
-  margin-bottom: 0.9rem;
-}
-
-.main-content--dashboard .greeting h1 {
-  margin-bottom: 0.25rem;
-  font-size: 1.4rem;
-}
-
-.main-content--dashboard .dashboard-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
+/*
+  Dashboard do gestor. O nome do arquivo ficou da versão compacta, mas o ritmo agora é
+  mais respirado: mesma grade de 4 colunas, com espaçamento e tamanhos vindos dos tokens.
+*/
+.main-content--dashboard .dashboard-grid,
 .main-content--dashboard .summary-cards {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-4);
 }
 
 .main-content--dashboard .status-chart,
 .main-content--dashboard .updates-chart {
   grid-column: span 2;
+  min-height: 16.5rem;
 }
 
 .main-content--dashboard .recent-alerts {
   grid-column: 1 / -1;
 }
 
-.main-content--dashboard .summary-card {
-  min-height: 7rem;
-  padding: 0.9rem;
-}
-
-.main-content--dashboard .summary-card__top {
-  min-height: 2.2rem;
-}
-
-.main-content--dashboard .summary-card__title {
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.main-content--dashboard .summary-card__icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.main-content--dashboard .summary-card__value-row {
-  margin-top: 0.45rem;
-}
-
-.main-content--dashboard .summary-card__value {
-  font-size: 1.75rem;
-}
-
-.main-content--dashboard .summary-card__caption {
-  font-size: 0.68rem;
-}
-
-.main-content--dashboard .dashboard-panel {
-  padding: 1rem;
-}
-
-.main-content--dashboard .dashboard-panel__title {
-  font-size: 0.9rem;
-}
-
-.main-content--dashboard .status-chart,
-.main-content--dashboard .updates-chart {
-  min-height: 13rem;
-}
-
-.main-content--dashboard .status-chart__content {
-  min-height: 9.5rem;
-  gap: 0.8rem;
-  padding-top: 0.5rem;
-}
-
-.main-content--dashboard .status-chart__visual {
-  width: min(9rem, 42%);
-}
-
-.main-content--dashboard .status-chart__total {
-  font-size: 1.4rem;
-}
-
-.main-content--dashboard .status-chart__legend {
-  gap: 0.65rem;
-  padding-left: 0;
-  list-style: none;
-}
-
-.main-content--dashboard .status-chart__legend-item {
-  grid-template-columns: 0.5rem minmax(4.7rem, 1fr) auto;
-  gap: 0.45rem;
-  font-size: 0.7rem;
-}
-
-.main-content--dashboard .updates-chart__chart {
-  height: 9.5rem;
-  margin-top: 0.55rem;
-}
-
-.main-content--dashboard .recent-alerts {
-  padding-bottom: 0.5rem;
-}
-
-.main-content--dashboard .recent-alerts__heading {
-  margin-bottom: 0.2rem;
-}
-
-.main-content--dashboard .recent-alert {
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
-  gap: 0.65rem;
-  padding: 0.55rem 0;
-}
-
-.main-content--dashboard .recent-alert__icon,
-.main-content--dashboard .recent-alert__icon--asset,
-.main-content--dashboard .recent-alert__icon--asset .icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.main-content--dashboard .recent-alert__when,
-.main-content--dashboard .recent-alert__author {
-  margin: 0;
-  font-size: 0.65rem;
-}
-
-.main-content--dashboard .recent-alert__message {
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
-
-.main-content--dashboard .status-badge {
-  padding: 0.28rem 0.55rem;
-  font-size: 0.63rem;
-}
-
 @media (max-height: 800px) and (min-width: 701px) {
-  .main-content--dashboard .greeting {
-    margin-bottom: 0.45rem;
+  .main-content--dashboard .updates-chart__chart {
+    height: 10rem;
   }
 
-  .main-content--dashboard .dashboard-grid,
-  .main-content--dashboard .summary-cards {
-    gap: 0.6rem;
-  }
-
-  .main-content--dashboard .summary-card {
-    min-height: 5.75rem;
-    padding: 0.65rem 0.75rem;
-  }
-
-  .main-content--dashboard .summary-card__top {
-    min-height: 1.75rem;
-  }
-
-  .main-content--dashboard .summary-card__value {
-    font-size: 1.5rem;
+  .main-content--dashboard .status-chart__visual {
+    width: min(9.5rem, 40%);
   }
 
   .main-content--dashboard .status-chart,
   .main-content--dashboard .updates-chart {
-    min-height: 10.75rem;
-  }
-
-  .main-content--dashboard .status-chart__content {
-    min-height: 7.9rem;
-  }
-
-  .main-content--dashboard .status-chart__visual {
-    width: min(7.25rem, 40%);
-  }
-
-  .main-content--dashboard .updates-chart__chart {
-    height: 7.9rem;
-  }
-
-  .main-content--dashboard .recent-alert {
-    padding: 0.35rem 0;
+    min-height: 14rem;
   }
 }
 

@@ -10,7 +10,11 @@ body {
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-regular);
-  line-height: 1.5;
+  font-feature-settings: "cv11", "ss03", "calt";
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -27,6 +31,26 @@ button {
   color: inherit;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Números alinhados em colunas e métricas */
+.summary-card__value,
+.status-chart__total,
+.status-chart__legend-value,
+.data-table td,
+.employee-summary__days strong,
+.employee-metrics article strong {
+  font-variant-numeric: tabular-nums;
+}
+
 .icon {
   display: block;
   width: 1.15rem;
@@ -36,7 +60,7 @@ button {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.8;
+  stroke-width: 1.75;
 }
 
 .visually-hidden {
@@ -66,39 +90,40 @@ button {
 }
 
 .main-content {
-  max-width: 100rem;
+  max-width: 92rem;
   margin: 0 auto;
-  padding: 1.2rem 2rem 1.4rem;
+  padding: var(--space-6) 2.5rem var(--space-7);
 }
 
 .greeting {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-5);
 }
 
 .greeting h1 {
-  margin: 0 0 var(--space-1);
+  margin: 0 0 0.3rem;
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.04em;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
 }
 
 .greeting p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
 }
 
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .dashboard-panel {
   min-width: 0;
   padding: var(--space-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
 }
@@ -107,4 +132,11 @@ button {
   margin: 0;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.dashboard-panel__subtitle {
+  margin: 0.15rem 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }

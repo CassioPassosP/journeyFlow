@@ -14,9 +14,11 @@ import com.journeyflow.dto.PillProgress.PillProgressUpdateRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.PillProgressEntity;
 import com.journeyflow.models.PillProgressId;
+import com.journeyflow.models.PointsEntity;
 import com.journeyflow.models.PillsEntity;
 import com.journeyflow.repositories.EmployeeRepository;
 import com.journeyflow.repositories.PillProgressRepository;
+import com.journeyflow.repositories.PointsRepository;
 import com.journeyflow.repositories.PillsRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class PillProgressService {
 
     private final PillProgressRepository pillProgressRepository;
+    private final PointsRepository pointsRepository;
     private final EmployeeRepository employeeRepository;
     private final PillsRepository pillsRepository;
 
@@ -42,6 +45,26 @@ public class PillProgressService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Progresso da pílula já existe");
         }
         return save(employee, pill);
+    }
+
+    /** Conclui um quiz validado pelo backend e registra seus pontos na mesma transação. */
+    @Transactional
+    public boolean completeQuiz(UUID employeeId, Long pillId) {
+        EmployeeEntity employee = findEmployee(employeeId);
+        PillsEntity pill = findPill(pillId);
+        PillProgressId id = new PillProgressId(employee.getId(), pill.getId());
+        boolean newlyCompleted = !pillProgressRepository.existsById(id);
+        if (newlyCompleted) save(employee, pill);
+
+        String reason = "Pílula concluída: " + pill.getTitle();
+        if (!pointsRepository.existsByEmployeeIdAndReason(employee.getId(), reason)) {
+            PointsEntity points = new PointsEntity();
+            points.setEmployee(employee);
+            points.setReason(reason);
+            points.setPoints(10);
+            pointsRepository.save(points);
+        }
+        return newlyCompleted;
     }
 
     /**

@@ -3,6 +3,7 @@ package com.journeyflow.controllers;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import com.journeyflow.dto.Alert.AlertAssignRequestDto;
@@ -26,44 +27,48 @@ public class AlertController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AlertResponseDto create(@Valid @RequestBody AlertCreateRequestDto request) {
-        return alertService.createAlert(request);
+    public AlertResponseDto create(@Valid @RequestBody AlertCreateRequestDto request, Authentication authentication) {
+        return alertService.createAlert(request, authentication.getName());
     }
 
-    /** GET /alert?storeId=1&status=OPEN&page=0&size=20 (a ordenação é fixa: mais recentes primeiro). */
+    /** A unidade e o destino são limitados pelo gestor autenticado; storeId, se informado, precisa corresponder. */
     @GetMapping
     public PageResponseDto<AlertResponseDto> findAll(
             @RequestParam(required = false) Long storeId,
             @RequestParam(required = false) AlertStatus status,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return alertService.findAlerts(storeId, status, pageable);
+            @PageableDefault(size = 20) Pageable pageable,
+            Authentication authentication) {
+        return alertService.findAlerts(storeId, status, pageable, authentication.getName());
     }
 
     @GetMapping("/{id}")
-    public AlertResponseDto findById(@PathVariable Long id) {
-        return alertService.findAlertById(id);
+    public AlertResponseDto findById(@PathVariable Long id, Authentication authentication) {
+        return alertService.findAlertById(id, authentication.getName());
     }
 
     @PatchMapping("/{id}/status")
     public AlertResponseDto updateStatus(@PathVariable Long id,
-                                         @Valid @RequestBody AlertStatusUpdateRequestDto request) {
-        return alertService.updateStatus(id, request);
+                                         @Valid @RequestBody AlertStatusUpdateRequestDto request,
+                                         Authentication authentication) {
+        return alertService.updateStatus(id, request, authentication.getName());
     }
 
     @PatchMapping("/{id}/confirmed")
     public AlertResponseDto updateConfirmed(@PathVariable Long id,
-                                            @Valid @RequestBody AlertConfirmedUpdateRequestDto request) {
-        return alertService.updateConfirmed(id, request);
+                                            @Valid @RequestBody AlertConfirmedUpdateRequestDto request,
+                                            Authentication authentication) {
+        return alertService.updateConfirmed(id, request, authentication.getName());
     }
 
     @PatchMapping("/{id}/assign")
-    public AlertResponseDto assign(@PathVariable Long id, @Valid @RequestBody AlertAssignRequestDto request) {
-        return alertService.assignManager(id, request);
+    public AlertResponseDto assign(@PathVariable Long id, @Valid @RequestBody AlertAssignRequestDto request,
+                                   Authentication authentication) {
+        return alertService.assignManager(id, request, authentication.getName());
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
-        alertService.deleteAlert(id);
+    public void delete(@PathVariable Long id, Authentication authentication) {
+        alertService.deleteAlert(id, authentication.getName());
     }
 }

@@ -30,7 +30,7 @@ public class PillsEntity {
     private String content;
 
     @Column(name = "day_from", nullable = false)
-    private Integer day_from;
+    private Integer dayFrom;
 
     @Column(name = "quiz_question", nullable = false)
     private String quiz_question;

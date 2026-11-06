@@ -4,16 +4,32 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const frontendRoot = __dirname;
-const port = Number(process.env.PORT || 8000);
+const port = Number(process.env.PORT) || 8000;
 const apiBase = new URL(process.env.JOURNEYFLOW_API_URL || "http://localhost:8080");
+const host = process.env.HOST || "127.0.0.1";
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
-  ".svg": "image/svg+xml"
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+  ".map": "application/json; charset=utf-8"
 };
+// Só estes caminhos são públicos. Antes qualquer arquivo da pasta era servido,
+// inclusive server.cjs e package.json.
+const publicEntries = ["index.html", "css", "js", "data", "assets"];
+
+function isPublicPath(relativePath) {
+  const [first] = relativePath.split(/[\\/]/);
+  return publicEntries.includes(first);
+}
 
 function sendJson(response, statusCode, body) {
   response.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
@@ -54,6 +70,12 @@ const server = http.createServer((request, response) => {
     return;
   }
 
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    response.writeHead(405, { Allow: "GET, HEAD", "Content-Type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify({ message: "Método não permitido." }));
+    return;
+  }
+
   let pathname;
   try {
     pathname = decodeURIComponent(requestUrl.pathname);
@@ -67,20 +89,44 @@ const server = http.createServer((request, response) => {
     sendJson(response, 403, { message: "Acesso negado." });
     return;
   }
+  if (!isPublicPath(relativePath)) {
+    sendJson(response, 404, { message: "Arquivo não encontrado." });
+    return;
+  }
 
   fs.stat(filePath, (error, stats) => {
     if (error || !stats.isFile()) {
       sendJson(response, 404, { message: "Arquivo não encontrado." });
       return;
     }
-    response.writeHead(200, {
-      "Content-Type": mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream"
-    });
-    fs.createReadStream(filePath).pipe(response);
+
+    // ETag simples: o navegador revalida a cada carga (sempre vê o código novo em desenvolvimento)
+    // mas recebe 304 sem baixar o arquivo de novo, o que deixa a navegação mais rápida.
+    const etag = `W/"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
+    const headers = {
+      "Content-Type": mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "Cache-Control": "no-cache",
+      ETag: etag,
+      "X-Content-Type-Options": "nosniff"
+    };
+    if (request.headers["if-none-match"] === etag) {
+      response.writeHead(304, headers);
+      response.end();
+      return;
+    }
+    headers["Content-Length"] = stats.size;
+    response.writeHead(200, headers);
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+    fs.createReadStream(filePath)
+      .on("error", () => response.destroy())
+      .pipe(response);
   });
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`JourneyFlow frontend: http://localhost:${port}`);
+server.listen(port, host, () => {
+  console.log(`JourneyFlow frontend: http://${host === "127.0.0.1" ? "localhost" : host}:${port}`);
   console.log(`API proxy: ${apiBase.origin}`);
 });

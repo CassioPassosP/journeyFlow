@@ -2,6 +2,7 @@ package com.journeyflow.dto.Alert;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import com.journeyflow.models.AlertEntity;
 import com.journeyflow.models.enums.AlertDestination;
@@ -11,6 +12,7 @@ import com.journeyflow.models.enums.AlertUrgency;
 public record AlertResponseDto(
         Long id,
         Long reportId,
+        UUID employeeId,
         Long storeId,
         Long assignedManagerId,
         AlertDestination destination,
@@ -28,7 +30,8 @@ public record AlertResponseDto(
     public static AlertResponseDto from(AlertEntity a) {
         return new AlertResponseDto(
                 a.getId(),
-                a.getReport().getId(),      // getId() em proxy LAZY não dispara SELECT
+                a.getReport() != null ? a.getReport().getId() : null,
+                a.getEmployeeId(),
                 a.getStore().getId(),
                 a.getAssignedTo() != null ? a.getAssignedTo().getId() : null,
                 a.getDestination(),

@@ -14,6 +14,8 @@ public interface PointsRepository extends JpaRepository<PointsEntity, Long> {
 
     Page<PointsEntity> findByEmployeeId(UUID employeeId, Pageable pageable);
 
+    boolean existsByEmployeeIdAndReason(UUID employeeId, String reason);
+
     /** Saldo calculado no banco (SUM), em vez de carregar o histórico inteiro na memória. */
     @Query("select coalesce(sum(p.points), 0L) from PointsEntity p where p.employee.id = :employeeId")
     Long sumPointsByEmployeeId(@Param("employeeId") UUID employeeId);

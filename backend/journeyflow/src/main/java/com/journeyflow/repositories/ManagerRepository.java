@@ -17,4 +17,6 @@ public interface ManagerRepository extends JpaRepository<ManagerEntity, Long> {
     boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
 
     Page<ManagerEntity> findByStoreId(Long storeId, Pageable pageable);
+
+    Optional<ManagerEntity> findFirstByStoreIdAndPositionIgnoreCaseOrderByNameAsc(Long storeId, String position);
 }

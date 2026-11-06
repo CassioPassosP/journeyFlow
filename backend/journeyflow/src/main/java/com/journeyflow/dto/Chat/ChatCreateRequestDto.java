@@ -8,11 +8,13 @@ import com.journeyflow.models.enums.MessageSender;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record ChatCreateRequestDto(
         @NotNull UUID employeeId,
         @NotNull MessageSender sender,
-        @NotBlank String content,
+        @NotBlank @Size(max = 500) String content,
         ContentSource source,   // opcional: default TEXT
-        Instant dateSent        // opcional: default agora
+        Instant dateSent,       // opcional: default agora
+        Long pillId             // opcional: vínculo com quiz de pílula
 ) {}

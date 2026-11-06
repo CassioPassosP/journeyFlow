@@ -12,31 +12,59 @@ function readStoredJson(key, fallback) {
   }
 }
 
-export function loadUserSettings(defaultUser) {
-  const settings = readStoredJson(settingsKey, {});
+// Nome/e-mail e notificações lidas pertencem a UMA conta. Antes eram gravados numa
+// chave única e, ao trocar de usuário no mesmo navegador, a próxima conta herdava
+// o nome e o e-mail da anterior. O tema continua sendo uma preferência do dispositivo.
+function scopedKey(base, userKey) {
+  return userKey ? `${base}.${userKey}` : base;
+}
+
+export function loadTheme() {
+  try {
+    const settings = readStoredJson(settingsKey, {});
+    return settings?.theme === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+export function loadUserSettings(defaultUser, userKey) {
+  const settings = readStoredJson(scopedKey(settingsKey, userKey), {});
   if (typeof settings !== "object" || settings === null || Array.isArray(settings)) {
     throw new Error("As configurações salvas do usuário são inválidas.");
   }
 
-  const name = typeof settings.name === "string" ? settings.name : defaultUser.name;
-  const email = typeof settings.email === "string" ? settings.email : defaultUser.email;
+<<<<<<< HEAD
+  const name = typeof settings.name === "string" && settings.name.trim() ? settings.name : defaultUser.name;
+  const email = typeof settings.email === "string" && settings.email.trim() ? settings.email : defaultUser.email;
+
+  return { name, email, theme: loadTheme() };
+}
+
+export function saveUserSettings(settings, userKey) {
+  const { theme, ...profile } = settings;
+  window.localStorage.setItem(scopedKey(settingsKey, userKey), JSON.stringify(profile));
+  // O tema fica numa chave global para valer já na tela de login.
+  window.localStorage.setItem(settingsKey, JSON.stringify({ theme: theme === "dark" ? "dark" : "light" }));
+=======
   const theme = settings.theme === "dark" ? "dark" : "light";
 
-  return { name, email, theme };
+  return { name: defaultUser.name, email: defaultUser.email, theme };
 }
 
 export function saveUserSettings(settings) {
-  window.localStorage.setItem(settingsKey, JSON.stringify(settings));
+  window.localStorage.setItem(settingsKey, JSON.stringify({ theme: settings.theme }));
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 }
 
-export function loadReadNotifications() {
-  const readIds = readStoredJson(readNotificationsKey, []);
+export function loadReadNotifications(userKey) {
+  const readIds = readStoredJson(scopedKey(readNotificationsKey, userKey), []);
   if (!Array.isArray(readIds) || !readIds.every((id) => typeof id === "string")) {
     throw new Error("A lista de notificações lidas salva no navegador é inválida.");
   }
   return new Set(readIds);
 }
 
-export function saveReadNotifications(readIds) {
-  window.localStorage.setItem(readNotificationsKey, JSON.stringify([...readIds]));
+export function saveReadNotifications(readIds, userKey) {
+  window.localStorage.setItem(scopedKey(readNotificationsKey, userKey), JSON.stringify([...readIds]));
 }

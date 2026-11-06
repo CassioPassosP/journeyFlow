@@ -2,6 +2,7 @@ package com.journeyflow.models;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -21,8 +22,8 @@ public class AlertEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
  
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "report_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "report_id")
     private ReportsEntity report;
  
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,6 +33,17 @@ public class AlertEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "store_id", nullable = false)
     private StoreEntity store;
+
+    @Column(name = "employee_id", nullable = false)
+    private UUID employeeId;
+
+    public UUID getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(UUID employeeId) {
+        this.employeeId = employeeId;
+    }
  
     @Enumerated(EnumType.STRING)
     @Column(name = "destination", nullable = false)

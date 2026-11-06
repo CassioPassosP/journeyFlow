@@ -1,20 +1,18 @@
 .status-chart {
   grid-column: span 2;
-  min-height: 17.5rem;
 }
 
 .status-chart__content {
   display: flex;
-  min-height: 13rem;
   align-items: center;
-  justify-content: space-around;
-  gap: var(--space-4);
-  padding-top: var(--space-3);
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
 }
 
 .status-chart__visual {
   position: relative;
-  width: min(11rem, 45%);
+  width: min(11.5rem, 42%);
   aspect-ratio: 1;
   flex: 0 0 auto;
 }
@@ -33,38 +31,60 @@
   justify-content: center;
   flex-direction: column;
   text-align: center;
+  pointer-events: none;
 }
 
 .status-chart__total {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
-  line-height: 1.15;
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
 }
 
 .status-chart__total-label {
-  max-width: 5rem;
-  margin-top: var(--space-1);
+  max-width: 5.5rem;
+  margin-top: 0.4rem;
   color: var(--color-text-muted);
-  font-size: 0.62rem;
+  font-size: var(--font-size-2xs);
   line-height: 1.35;
 }
 
 .status-chart__legend {
   display: grid;
-  gap: var(--space-3);
+  min-width: 0;
+  flex: 1;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
+/* Cada linha: ponto, rótulo, valor e uma barra fina de proporção */
 .status-chart__legend-item {
   display: grid;
-  grid-template-columns: 0.55rem minmax(5.7rem, 1fr) auto;
+  grid-template-columns: 0.6rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-xs);
+  gap: 0.35rem var(--space-2);
+  font-size: var(--font-size-sm);
 }
 
+.status-chart__legend-item::after {
+  grid-column: 2 / -1;
+  height: 0.3rem;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(var(--tone), var(--tone)) 0 / calc(var(--pct, 0) * 1%) 100% no-repeat,
+    var(--color-neutral-soft);
+  content: "";
+}
+
+.status-chart__legend-item:has(.status-chart__dot--success) { --tone: var(--color-success); }
+.status-chart__legend-item:has(.status-chart__dot--warning) { --tone: var(--color-warning); }
+.status-chart__legend-item:has(.status-chart__dot--danger) { --tone: var(--color-danger); }
+
 .status-chart__dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.6rem;
+  height: 0.6rem;
   border-radius: var(--radius-pill);
 }
 
@@ -81,9 +101,27 @@
 }
 
 .status-chart__legend-label {
-  color: var(--color-text-muted);
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .status-chart__legend-value {
   font-weight: var(--font-weight-semibold);
+}
+
+/* Em telas estreitas a rosca é pequena: o rótulo não cabe dentro do anel */
+@media (max-width: 480px) {
+  .status-chart__visual {
+    width: 40%;
+  }
+
+  .status-chart__total {
+    font-size: var(--font-size-xl);
+  }
+
+  .status-chart__total-label {
+    display: none;
+  }
 }

@@ -69,7 +69,7 @@ public class PillsService {
                               String quizQuestion, String quizOptions, Integer quizCorrect) {
         pill.setTitle(title.trim());
         pill.setContent(content);
-        pill.setDay_from(dayFrom);               // a entidade ainda usa snake_case (day_from)
+        pill.setDayFrom(dayFrom);
         pill.setQuiz_question(quizQuestion);
         pill.setQuiz_options(quizOptions);
         pill.setQuiz_correct(quizCorrect);

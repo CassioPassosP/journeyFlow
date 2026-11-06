@@ -1,5 +1,7 @@
 package com.journeyflow.services;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -32,6 +34,23 @@ public class PointsService {
 
     private final PointsRepository pointsRepository;
     private final EmployeeRepository employeeRepository;
+    private final Clock clock;
+
+    @Transactional
+    public boolean awardConversationCompletion(UUID employeeId) {
+        EmployeeEntity employee = employeeRepository.findByIdForUpdate(employeeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+        String reason = "Conversa concluída: " + LocalDate.now(clock);
+        if (pointsRepository.existsByEmployeeIdAndReason(employeeId, reason)) return false;
+
+        PointsEntity entry = new PointsEntity();
+        entry.setEmployee(employee);
+        entry.setReason(reason);
+        entry.setPoints(5);
+        pointsRepository.save(entry);
+        return true;
+    }
 
     @Transactional
     public PointsResponseDto createPoints(PointsCreateRequestDto dto) {
