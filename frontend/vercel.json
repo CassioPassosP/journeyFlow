@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/__api",
+      "destination": "https://journeyflow.onrender.com"
+    },
+    {
+      "source": "/__api/:path*",
+      "destination": "https://journeyflow.onrender.com/:path*"
+    }
+  ]
+}

@@ -73,24 +73,8 @@ function mapEmployee(employee, store) {
   };
 }
 
-<<<<<<< HEAD
-export async function completePill(employeeId, pillId) {
-  return apiRequest("/pillprogress", { method: "POST", body: { employeeId, pillId } });
-}
-
-function alertTimestamp(alert) {
-  if (!alert.alertDate && !alert.createdAt) return 0;
-  const time = new Date(alert.alertDate || alert.createdAt).getTime();
-  return Number.isNaN(time) ? 0 : time;
-}
-
-function mapAlert(alert, reportById, employeeById) {
-  const report = reportById.get(alert.reportId);
-  const employee = report ? employeeById.get(report.employeeId) : null;
-=======
 function mapAlert(alert, employeeById) {
   const employee = employeeById.get(alert.employeeId);
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   const detail = alert.subtitle?.trim();
   const suggestion = alert.suggestion?.trim();
   const message = [alert.alertTitle, detail, suggestion].filter(Boolean).join(" — ");
@@ -107,16 +91,11 @@ function mapAlert(alert, employeeById) {
     when: formatAlertDate(alert),
     timestamp: alertTimestamp(alert),
     confirmed: alert.confirmed,
-<<<<<<< HEAD
-    suggestion: alert.suggestion?.trim() || "",
-    reportId: alert.reportId
-=======
     resolutionStatus: alert.status || "OPEN",
     reportId: alert.reportId,
     destination: alert.destination,
     urgency: alert.urgency,
     createdAt: alert.createdAt || alert.alertDate
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   };
 }
 
@@ -143,21 +122,9 @@ export async function getDashboardData(session) {
   if (session?.role === "EMPLOYEE") return getEmployeeDashboardData(session);
   if (session?.role !== "MANAGER") throw new Error("Tipo de conta não reconhecido. Entre novamente.");
 
-<<<<<<< HEAD
-  // Duas rodadas de requisições em paralelo em vez de três em sequência.
-  const [manager, reports] = await Promise.all([
-    apiRequest(`/manager/${encodeURIComponent(session.userId)}`),
-    getAllPages("/reports")
-=======
   const manager = await apiRequest(`/manager/${encodeURIComponent(session.userId)}`);
-  const store = await apiRequest(`/store/${encodeURIComponent(manager.storeId)}`);
-  const [stores, employeeRecords, alertRecords] = await Promise.all([
+  const [stores, store, employeeRecords, alertRecords] = await Promise.all([
     apiRequest("/store"),
-    getAllPages(`/employee?storeId=${encodeURIComponent(manager.storeId)}`),
-    getAllPages(`/alert?storeId=${encodeURIComponent(manager.storeId)}`)
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
-  ]);
-  const [store, employeeRecords, alertRecords] = await Promise.all([
     apiRequest(`/store/${encodeURIComponent(manager.storeId)}`),
     getAllPages(`/employee?storeId=${encodeURIComponent(manager.storeId)}`),
     getAllPages(`/alert?storeId=${encodeURIComponent(manager.storeId)}`)
@@ -188,14 +155,6 @@ export async function getDashboardData(session) {
   const percent = (count) => totalEmployees ? Math.round((count / totalEmployees) * 100) : 0;
 
   return {
-<<<<<<< HEAD
-    unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
-    user: { name: manager.name, email: manager.email, role: "Gestor da unidade" },
-    employee: mockData.employee,
-    menu: mockData.menu,
-    sidebarTip: mockData.sidebarTip,
-    greeting: mockData.greeting,
-=======
     unit: { name: store.storeName, updatedAt: "agora" },
     user: {
       name: manager.name,
@@ -205,7 +164,6 @@ export async function getDashboardData(session) {
         : "Gestor da unidade"
     },
 
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
     employees,
     alerts,
     recentAlerts: alerts.slice(0, 5),
@@ -229,10 +187,6 @@ export async function getDashboardData(session) {
   };
 }
 
-<<<<<<< HEAD
-function redemptionReason(reward) {
-  return `Resgate: ${reward.name}`;
-=======
 export async function refreshManagerAlerts(data) {
   const storeId = encodeURIComponent(data.currentManager.storeId);
   const [alertPage, employeePage] = await Promise.all([
@@ -333,7 +287,6 @@ function sameEmployee(left, right) {
     && left.currentState === right.currentState
     && left.interaction === right.interaction
     && left.lastInteraction === right.lastInteraction;
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 }
 
 async function getEmployeeDashboardData(session) {
@@ -405,22 +358,6 @@ export async function sendEmployeeMessage(employeeId, content, pillId = null) {
   });
 }
 
-<<<<<<< HEAD
-// O resgate era só uma conta feita no navegador e sumia ao recarregar a página.
-// A API de pontos aceita lançamentos negativos, então o resgate passa a ser gravado.
-export async function redeemReward(employeeId, reward) {
-  return apiRequest("/points", {
-    method: "POST",
-    body: { employeeId, reason: redemptionReason(reward), points: -Math.abs(reward.points) }
-  });
-}
-
-export async function startEmployeePillQuiz(employeeId) {
-  return apiRequest(`/chat/quiz/${encodeURIComponent(employeeId)}`, { method: "POST" });
-}
-
-=======
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 export async function finishEmployeeConversation(employeeId) {
   return apiRequest(`/chat/finish/${encodeURIComponent(employeeId)}`, { method: "POST" });
 }

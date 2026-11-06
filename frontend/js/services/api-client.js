@@ -1,4 +1,4 @@
-const SESSION_KEY = "https://journeyflow.onrender.com";
+const SESSION_KEY = "journeyflow.api-session";
 const API_PREFIX = "/__api";
 const REQUEST_TIMEOUT_MS = 20000;
 
