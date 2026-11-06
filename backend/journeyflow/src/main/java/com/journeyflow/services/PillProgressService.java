@@ -53,15 +53,18 @@ public class PillProgressService {
         EmployeeEntity employee = findEmployee(employeeId);
         PillsEntity pill = findPill(pillId);
         PillProgressId id = new PillProgressId(employee.getId(), pill.getId());
-        if (pillProgressRepository.existsById(id)) return false;
+        boolean newlyCompleted = !pillProgressRepository.existsById(id);
+        if (newlyCompleted) save(employee, pill);
 
-        save(employee, pill);
-        PointsEntity points = new PointsEntity();
-        points.setEmployee(employee);
-        points.setReason("Pílula concluída: " + pill.getTitle());
-        points.setPoints(10);
-        pointsRepository.save(points);
-        return true;
+        String reason = "Pílula concluída: " + pill.getTitle();
+        if (!pointsRepository.existsByEmployeeIdAndReason(employee.getId(), reason)) {
+            PointsEntity points = new PointsEntity();
+            points.setEmployee(employee);
+            points.setReason(reason);
+            points.setPoints(10);
+            pointsRepository.save(points);
+        }
+        return newlyCompleted;
     }
 
     /**

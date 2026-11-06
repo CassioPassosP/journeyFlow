@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.journeyflow.dto.Auth.LoginRequestDto;
 import com.journeyflow.dto.Auth.LoginResponseDto;
+import com.journeyflow.dto.Auth.ProfileUpdateRequestDto;
 import com.journeyflow.dto.Auth.RegisterRequestDto;
 import com.journeyflow.models.EmployeeEntity;
 import com.journeyflow.models.ManagerEntity;
@@ -77,13 +78,14 @@ public class AuthService {
         StoreEntity store = storeRepository.findById(dto.storeId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Loja não encontrada"));
 
-        if (dto.role() == RegisterRequestDto.Role.MANAGER) {
+        if (dto.role() == RegisterRequestDto.Role.MANAGER
+                || dto.role() == RegisterRequestDto.Role.RH) {
             ManagerEntity manager = new ManagerEntity();
             manager.setStore(store);
             manager.setName(dto.name().trim());
             manager.setEmail(email);
             manager.setPassword(passwordEncoder.encode(dto.password()));
-            manager.setPosition(dto.role().name());
+            manager.setPosition(dto.role() == RegisterRequestDto.Role.RH ? "RH" : "MANAGER");
 
             ManagerEntity saved = managerRepository.save(manager);
             return buildResponse(saved.getId().toString(), saved.getEmail(), ROLE_MANAGER);
@@ -137,6 +139,35 @@ public class AuthService {
 
         passwordEncoder.matches(dto.password(), dummyHash);
         throw invalidCredentials();
+    }
+
+    @Transactional
+    public LoginResponseDto updateProfile(ProfileUpdateRequestDto dto, String actorEmail, String authority) {
+        String email = WorkerEmailValidator.normalize(dto.email());
+        String role = switch (authority) {
+            case "ROLE_EMPLOYEE" -> ROLE_EMPLOYEE;
+            case "ROLE_MANAGER" -> ROLE_MANAGER;
+            default -> throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Seu perfil não pode ser atualizado por este endpoint");
+        };
+
+        if (ROLE_EMPLOYEE.equals(role)) {
+            EmployeeEntity employee = employeeRepository.findByEmailIgnoreCase(actorEmail)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                            "Colaborador autenticado não encontrado"));
+            emailValidator.assertAvailable(email, employee.getId(), null);
+            employee.setName(dto.name().trim());
+            employee.setEmail(email);
+            return buildResponse(employee.getId().toString(), employee.getEmail(), role);
+        }
+
+        ManagerEntity manager = managerRepository.findByEmailIgnoreCase(actorEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Gestor autenticado não encontrado"));
+        emailValidator.assertAvailable(email, null, manager.getId());
+        manager.setName(dto.name().trim());
+        manager.setEmail(email);
+        return buildResponse(manager.getId().toString(), manager.getEmail(), role);
     }
 
     private void checkPassword(String rawPassword, String encodedPassword) {

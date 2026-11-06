@@ -5,9 +5,18 @@ import {
   createEmployee,
   getDashboardData,
   loginAndLoadDashboard,
+<<<<<<< HEAD
   redeemReward,
   sendEmployeeMessage
 } from "./services/data-service.js";
+=======
+  refreshManagerAlerts,
+  sendEmployeeMessage,
+  updateOwnProfile,
+  finishEmployeeConversation
+} from "./services/data-service.js";
+import { clearSession, getSession, saveSession } from "./services/api-client.js";
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 import { renderSidebar } from "./components/sidebar.js";
 import { renderHeader } from "./components/header.js";
 import { renderSummaryCards } from "./components/summary-cards.js";
@@ -49,6 +58,7 @@ let theme = "light";
 let notificationsOpen = false;
 let notificationError = "";
 let employeeNotice = "";
+<<<<<<< HEAD
 let lastRouteKey = "";
 let busyCount = 0;
 let noticeTimer;
@@ -205,6 +215,12 @@ function setNotificationsOpen(open, { restoreFocus = false } = {}) {
   toggle.setAttribute("aria-expanded", String(open));
   if (!open && restoreFocus) toggle.focus();
 }
+=======
+let refreshInProgress = false;
+let refreshPendingRender = false;
+
+const DATA_REFRESH_INTERVAL_MS = 15000;
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 
 function persistReadNotifications(nextReadNotifications) {
   try {
@@ -265,8 +281,12 @@ function renderPage({ moveFocus = false, preserveChatScroll = false } = {}) {
     if (employeePage === "settings") {
       renderSettingsPage(mainContent, data.user, theme);
     } else {
+<<<<<<< HEAD
       renderEmployeePage(mainContent, data, employeePage, data.employee.chat, employeeNotice, data.employee.redeemedRewardIds || []);
       scrollChatsToEnd();
+=======
+      renderEmployeePage(mainContent, data, employeePage, data.employee.chat, employeeNotice);
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
     }
   } else if (page === "settings") {
     renderSettingsPage(mainContent, data.user, theme);
@@ -339,11 +359,73 @@ function showPageError(message) {
   error.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
+<<<<<<< HEAD
 function flashNotice(message) {
   employeeNotice = message;
   window.clearTimeout(noticeTimer);
   // O aviso some sozinho; antes ele ficava na tela até o próximo login.
   noticeTimer = window.setTimeout(() => {
+=======
+async function reloadDashboard() {
+  data = await getDashboardData(getSession());
+  renderPage();
+}
+
+function canRefreshCurrentPage() {
+  const { page, detail } = currentRoute();
+  if (page === "settings" || page === "employees" && detail === "new") return false;
+  return !document.querySelector("#main-content")?.contains(document.activeElement);
+}
+
+async function refreshDashboardData() {
+  const session = getSession();
+  if (!data || session?.role !== "MANAGER" || document.hidden || refreshInProgress) return;
+
+  refreshInProgress = true;
+  try {
+    const updatedData = await refreshManagerAlerts(data);
+    if (updatedData === data) {
+      if (refreshPendingRender && canRefreshCurrentPage()) {
+        refreshPendingRender = false;
+        renderPage();
+      }
+      return;
+    }
+
+    data = updatedData;
+    refreshPendingRender = true;
+    if (canRefreshCurrentPage()) {
+      refreshPendingRender = false;
+      renderPage();
+    }
+  } catch (error) {
+    console.error("Não foi possível atualizar os alertas automaticamente.", error);
+  } finally {
+    refreshInProgress = false;
+  }
+}
+
+function showApplication() {
+  document.querySelector("#login-screen").hidden = true;
+  document.querySelector(".app-layout").hidden = false;
+}
+
+function setRouteForRole(role) {
+  const isEmployeeRoute = window.location.hash.startsWith("#employee/");
+  if (role === "EMPLOYEE" && !isEmployeeRoute) {
+    window.location.hash = "#employee/home";
+  } else if (role === "MANAGER" && isEmployeeRoute) {
+    window.location.hash = "#dashboard";
+  }
+}
+
+async function submitEmployeeMessage(content, pillId = null) {
+  employeeNotice = "JourneyFlow está respondendo…";
+  renderPage({ preserveChatScroll: true });
+  try {
+    await sendEmployeeMessage(data.currentEmployee.id, content, pillId);
+    data = await getDashboardData(getSession());
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
     employeeNotice = "";
     document.querySelectorAll(".employee-notice").forEach((element) => {
       element.classList.add("is-leaving");
@@ -437,12 +519,25 @@ window.addEventListener("hashchange", () => {
   window.scrollTo(0, 0);
 });
 
+<<<<<<< HEAD
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && notificationsOpen) {
     setNotificationsOpen(false, { restoreFocus: true });
   }
 });
 
+=======
+window.addEventListener("focus", () => {
+  refreshDashboardData();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshDashboardData();
+});
+
+window.setInterval(refreshDashboardData, DATA_REFRESH_INTERVAL_MS);
+
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 document.addEventListener("input", (event) => {
   if (!data) return;
   if (event.target.matches("[data-search-employees]")) {
@@ -502,6 +597,7 @@ document.addEventListener("click", async (event) => {
     await submitEmployeeMessage(text);
     return;
   }
+<<<<<<< HEAD
 
   const redeemButton = closest("[data-redeem-reward]");
   if (redeemButton) {
@@ -513,6 +609,34 @@ document.addEventListener("click", async (event) => {
     persistReadNotifications(new Set(data.alerts.map((alert) => alert.id)));
     refreshHeader({ instant: true });
     return;
+=======
+  if (event.target.closest("[data-employee-finish]")) {
+    const button = event.target.closest("[data-employee-finish]");
+    button.disabled = true;
+    try {
+      const result = await finishEmployeeConversation(data.currentEmployee.id);
+      data = await getDashboardData(getSession());
+      employeeNotice = result.content.startsWith("Não consegui analisar a conversa agora.")
+        ? "A análise não foi concluída. Suas mensagens foram salvas; tente concluir novamente."
+        : result.content.startsWith("Identifiquei que talvez seja importante oferecer um acompanhamento humano.")
+          ? ""
+          : "Análise da conversa concluída.";
+      renderPage({ preserveChatScroll: true });
+    } catch (error) {
+      button.disabled = false;
+      showPageError(error.message);
+    }
+  }
+  if (event.target.closest("[data-mark-all-read]")) {
+    const nextReadNotifications = new Set(data.alerts.map((alert) => alert.id));
+    persistReadNotifications(nextReadNotifications);
+    renderHeader(document.querySelector("#header"), data, {
+      alerts: data.alerts,
+      readNotifications,
+      notificationsOpen,
+      notificationError
+    });
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   }
 
   const notificationButton = closest("[data-open-notification]");
@@ -674,6 +798,7 @@ document.addEventListener("submit", async (event) => {
     event.preventDefault();
     const input = chatForm.elements.message;
     const text = input.value.trim();
+<<<<<<< HEAD
     if (!text || sendingMessage) return;
     input.value = "";
     await submitEmployeeMessage(text, {
@@ -682,6 +807,17 @@ document.addEventListener("submit", async (event) => {
         if (current && !current.value) current.value = text;
       }
     });
+=======
+    if (!text) return;
+    const lastMessage = data.employee.chat[data.employee.chat.length - 1];
+    const completedPillIds = new Set((data.pillProgress || []).map((progress) => String(progress.pillId)));
+    const pendingPillId = lastMessage?.author === "bot"
+      && lastMessage.pillId
+      && !completedPillIds.has(String(lastMessage.pillId))
+      ? lastMessage.pillId
+      : null;
+    await submitEmployeeMessage(text, pendingPillId);
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
     return;
   }
 
@@ -728,17 +864,46 @@ document.addEventListener("submit", async (event) => {
     const name = String(values.get("name")).trim();
     const email = String(values.get("email")).trim();
     const message = profileForm.querySelector("[data-profile-message]");
+    const submitButton = profileForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
     try {
+<<<<<<< HEAD
       saveUserSettings({ name, email, theme }, userKey());
       data.user.name = name;
       data.user.email = email;
       refreshHeader({ instant: true });
       message.textContent = "Perfil atualizado neste navegador.";
+=======
+      const session = await updateOwnProfile(name, email);
+      saveSession(session);
+      data.user.name = name;
+      data.user.email = email;
+      if (data.currentEmployee) {
+        data.currentEmployee.name = name;
+        data.currentEmployee.email = email;
+      }
+      if (data.currentManager) {
+        data.currentManager.name = name;
+        data.currentManager.email = email;
+      }
+      const isEmployee = currentRoute().page === "employee";
+      const headerData = isEmployee
+        ? { ...data, user: { ...data.user, role: data.employee.role } }
+        : data;
+      renderHeader(document.querySelector("#header"), headerData, {
+        alerts: data.alerts,
+        readNotifications,
+        notificationsOpen,
+        role: isEmployee ? "employee" : "manager"
+      });
+      message.textContent = "Perfil atualizado com sucesso.";
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
       message.classList.remove("settings-message--error");
     } catch (error) {
-      console.error("Não foi possível salvar as configurações do perfil.", error);
-      message.textContent = "Não foi possível salvar. Verifique as permissões de armazenamento do navegador.";
+      message.textContent = error.message || "Não foi possível atualizar o perfil.";
       message.classList.add("settings-message--error");
+    } finally {
+      submitButton.disabled = false;
     }
     return;
   }

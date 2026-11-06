@@ -4,11 +4,11 @@ const employeeMenu = [
   { id: "home", label: "Início", icon: "dashboard" },
   { id: "conversation", label: "Conversa", icon: "chat" },
   { id: "pills", label: "Pílulas de conhecimento", icon: "pills" },
-  { id: "rewards", label: "Minhas recompensas", icon: "gift" },
   { id: "progress", label: "Meu progresso", icon: "progress" },
   { id: "settings", label: "Configurações", icon: "settings" }
 ];
 
+<<<<<<< HEAD
 function isCurrent(item, activePage) {
   return activePage === item.id
     || (activePage.startsWith("employees") && item.id === "employees")
@@ -33,6 +33,17 @@ export function renderSidebar(container, data, activePage = "dashboard", role = 
   }
   container.dataset.signature = signature;
 
+=======
+const managerMenu = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { id: "employees", label: "Funcionários", icon: "users" },
+  { id: "alerts", label: "Alertas", icon: "alerts" },
+  { id: "settings", label: "Configurações", icon: "settings" }
+];
+
+export function renderSidebar(container, data, activePage = "dashboard", role = "manager") {
+  const menu = role === "employee" ? employeeMenu : managerMenu;
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   const menuItems = menu.map((item) => {
     const currentPage = isCurrent(item, activePage) ? ' aria-current="page"' : "";
     const href = role === "employee" ? `#employee/${item.id}` : `#${item.id}`;
@@ -59,7 +70,7 @@ export function renderSidebar(container, data, activePage = "dashboard", role = 
         ${iconMarkup("heart", "sidebar__tip-icon")}
         <p>${escapeHtml(role === "employee"
           ? "Precisa de ajuda? Nossa equipe está aqui para apoiar você sempre que precisar."
-          : data.sidebarTip)}</p>
+          : "Acompanhe os funcionários e os alertas da sua unidade.")}</p>
         ${role === "employee" ? '<a class="employee-sidebar__support" href="mailto:suporte@journeyflow.com">Falar com o suporte</a>' : ""}
       </aside>
     </div>

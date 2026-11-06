@@ -243,6 +243,19 @@
   background-clip: content-box;
 }
 
+.employee-chat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.employee-conversation__full-history {
+  justify-self: start;
+  color: var(--color-primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .employee-chat-message {
   display: flex;
   align-items: flex-start;
@@ -626,6 +639,11 @@
   background: #e5fbef;
   color: #16794c;
   font-size: 0.75rem;
+}
+
+.employee-notice--error {
+  background: #fff0ed;
+  color: #a52e26;
 }
 
 .employee-page-heading {

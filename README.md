@@ -20,10 +20,9 @@ Dashboard para acompanhar a integração de equipes, visualizar alertas e apoiar
 ## Estrutura
 
 ```text
-frontend/                  Interface web e dados demonstrativos
+frontend/                  Interface web
   assets/                  Imagens e ícones
   css/                     Estilos da aplicação
-  data/mock-data.js        Dados usados atualmente pela interface
   js/                      Componentes, páginas e serviços do frontend
 backend/journeyflow/       Aplicação Spring Boot
   src/main/java/           Controllers, serviços, repositórios e entidades
@@ -52,13 +51,21 @@ npm start
 
 Abra <http://localhost:8000>. Se o backend estiver em outro endereço, defina `JOURNEYFLOW_API_URL` antes de iniciar o servidor (por padrão, `http://localhost:8080`).
 
-O login aceita contas de gestor e colaborador, autenticadas em `/auth/login`. O gestor cria a conta do colaborador em **Funcionários > Funcionário**, definindo e compartilhando com ele o e-mail e a senha inicial. O colaborador entra com essas credenciais; seu perfil, saldo/histórico de pontos, mensagens e progresso das pílulas de conhecimento são carregados pelos endpoints existentes. As pílulas são liberadas conforme o dia da jornada, e a conclusão é registrada ao acertar o questionário. O gestor também consome os endpoints de alertas, relatos, gerente e loja, e pode confirmar alertas. O token fica em `sessionStorage` e é encaminhado pelo proxy; não use este servidor de desenvolvimento como proxy público de produção. As recompensas ainda usam os dados demonstrativos de `frontend/data/mock-data.js`.
+O login aceita contas de gestor e colaborador, autenticadas em `/auth/login`. O gestor cria a conta do colaborador em **Funcionários > Funcionário**, definindo e compartilhando com ele o e-mail e a senha inicial. O colaborador entra com essas credenciais; seu perfil, saldo/histórico de pontos, mensagens e progresso das pílulas de conhecimento são carregados pelos endpoints existentes. As pílulas são liberadas conforme o dia da jornada, e a conclusão é registrada ao acertar o questionário. O gestor também consome os endpoints de alertas, gerente e loja, e pode confirmar alertas. O token fica em `sessionStorage` e é encaminhado pelo proxy; não use este servidor de desenvolvimento como proxy público de produção. A interface exibe somente registros recebidos do backend; recursos sem suporte na API, como recompensas, não são simulados.
+
+## Classificação privada de conversas
+
+Ao concluir uma conversa em `/chat/finish/{employeeId}`, o Gemini classifica somente o tipo, o destino e a prioridade do acompanhamento. Conversas neutras ou sem informação suficiente são encerradas sem alerta. Assuntos de rotina são encaminhados ao papel `MANAGER`; relatos de abuso, assédio, discriminação, violência, retaliação ou sobre um gestor são destinados ao papel `RH` e continuam exigindo autorização do colaborador para encaminhar o pedido de conversa privada.
+
+Os alertas guardam o identificador do colaborador, a unidade, a prioridade (`NORMAL`, `ATTENTION` ou `FOLLOW_UP`) e uma sugestão genérica; não guardam transcrição, resumo nem detalhes do relato. O histórico de conversa só pode ser consultado pelo próprio colaborador. A consulta e as alterações dos alertas ficam limitadas à unidade e ao destino compatível com o papel do gestor autenticado. Cada unidade precisa ter pelo menos um registro de gestor com `position` igual a `MANAGER` (ou `GERENTE`) e, para encaminhamentos de RH, um com `position` igual a `RH` (ou `HR`).
+
+Antes de executar a versão com alertas sem relatório, aplique uma vez o script [V2026_11_05__alerts_without_reports.sql](backend/journeyflow/src/main/resources/db/manual/V2026_11_05__alerts_without_reports.sql) no PostgreSQL. O projeto usa `spring.jpa.hibernate.ddl-auto=none`, então a alteração do esquema não é automática.
 
 ## Executar o backend
 
-Requisitos: JDK 21 e acesso a uma instância PostgreSQL compatível com a configuração da aplicação.
+Requisitos: JDK 21 e acesso a uma instância PostgreSQL. Na raiz do repositório, copie `.env.example` para `.env` e preencha as credenciais do banco, a chave JWT e a chave da API Gemini. O arquivo `.env` é local e não deve ser compartilhado nem enviado ao Git.
 
-Configure as propriedades de conexão do datasource para o seu ambiente em `backend/journeyflow/src/main/resources/application.properties` antes de iniciar. Não compartilhe credenciais reais no repositório.
+O backend importa esse arquivo ao iniciar; as propriedades correspondentes ficam em `backend/journeyflow/src/main/resources/application.properties`.
 
 No Windows PowerShell:
 

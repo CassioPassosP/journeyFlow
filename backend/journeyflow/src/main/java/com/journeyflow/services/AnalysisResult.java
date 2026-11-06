@@ -1,3 +1,6 @@
 package com.journeyflow.services;
 
-  public record AnalysisResult(String summary, String topic, String kind) {}
+import com.journeyflow.models.enums.AlertDestination;
+import com.journeyflow.models.enums.AlertUrgency;
+
+public record AnalysisResult(String kind, AlertDestination destination, AlertUrgency urgency) {}

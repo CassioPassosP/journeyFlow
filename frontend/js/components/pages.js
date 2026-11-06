@@ -19,8 +19,12 @@ export function renderDashboardPage(container, data) {
   const firstName = data.user.name.trim().split(/\s+/)[0];
   container.innerHTML = `
     <section class="greeting" aria-labelledby="greeting-title">
-      <h1 id="greeting-title">${escapeHtml(data.greeting.title || "Bom dia")}, ${escapeHtml(firstName)}</h1>
-      <p>${escapeHtml(data.greeting.subtitle)}</p>
+      <div class="greeting__copy">
+        <span class="greeting__wave" aria-hidden="true">👋</span>
+        <div><h1 id="greeting-title">Olá, ${escapeHtml(firstName)}</h1>
+          <p>Acompanhe funcionários e alertas da sua unidade.</p></div>
+      </div>
+      <span class="greeting__art" aria-hidden="true">📊</span>
     </section>
     <div class="dashboard-grid">
       <section id="summary-cards" class="summary-cards" aria-label="Resumo da equipe"></section>
@@ -216,6 +220,7 @@ export function renderEmployeeDetails(container, employee, alerts) {
     </section>
     <div class="employee-metrics">
       <article><span>Unidade</span><strong>${escapeHtml(employee.unit || "Não informada")}</strong></article>
+<<<<<<< HEAD
       <article><span>Data de contratação</span><strong>${escapeHtml(hiredAt)}</strong></article>
       <article><span>Alertas registrados</span><strong>${employeeAlerts.length} <small>${pendingCount} sem confirmar</small></strong></article>
       <article><span>Última interação</span><strong>${escapeHtml(employee.interaction)}</strong></article>
@@ -223,6 +228,15 @@ export function renderEmployeeDetails(container, employee, alerts) {
     <div class="employee-details-grid">
       <section class="data-panel"><div class="data-panel__heading"><h2>Alertas recentes</h2></div>${recentAlerts}</section>
       <section class="data-panel suggestions"><h2>Sugestões de acompanhamento</h2><p>Sugestões de ações para este funcionário.</p>${suggestions}</section>
+=======
+      <article><span>Data de contratação</span><strong>${escapeHtml(employee.hiredAt ? new Date(`${employee.hiredAt}T00:00:00`).toLocaleDateString("pt-BR") : "Não informada")}</strong></article>
+    </div>
+    <div class="employee-details-grid">
+      <section class="data-panel"><div class="data-panel__heading"><h2>Alertas recentes</h2></div>${recentAlerts}</section>
+      <section class="data-panel suggestions"><h2>Sugestões de acompanhamento</h2><p>${employeeAlerts.length
+        ? escapeHtml(employeeAlerts[0].message)
+        : "Nenhuma sugestão de acompanhamento registrada."}</p></section>
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
     </div>
   `;
 }
@@ -303,7 +317,7 @@ export function renderSettingsPage(container, user, theme) {
     <div class="settings-grid">
       <form class="settings-panel" data-profile-form>
         <h2>Dados do perfil</h2>
-        <p>Atualize o nome e o e-mail exibidos na sua conta neste navegador.</p>
+        <p>Atualize o nome e o e-mail salvos na sua conta.</p>
         <label>Nome completo<input name="name" autocomplete="name" value="${escapeHtml(user.name)}" required></label>
         <label>E-mail<input name="email" type="email" autocomplete="email" value="${escapeHtml(user.email)}" required></label>
         <div class="settings-panel__footer">

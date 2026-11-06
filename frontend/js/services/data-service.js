@@ -1,4 +1,3 @@
-import mockData from "../../data/mock-data.js";
 import { apiRequest, login } from "./api-client.js";
 
 const PAGE_SIZE = 100;
@@ -14,12 +13,12 @@ async function getAllPages(path) {
   throw new Error("A consulta excedeu o limite de páginas permitido.");
 }
 
-function statusKey(value, report) {
+function statusKey(value) {
   const normalized = String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (report?.helpRequest || report?.kind === "SUPPORT_REQUEST" || /help|ajuda|suporte/.test(normalized)) {
+  if (value === "FOLLOW_UP" || value === "TODAY" || /help|ajuda|suporte/.test(normalized)) {
     return "help";
   }
-  if (report?.kind === "NEGATIVE_NO_REQUEST" || /attention|atencao|alerta/.test(normalized)) {
+  if (value === "ATTENTION" || value === "THREE_DAYS" || /attention|atencao|alerta/.test(normalized)) {
     return "attention";
   }
   return "normal";
@@ -74,6 +73,7 @@ function mapEmployee(employee, store) {
   };
 }
 
+<<<<<<< HEAD
 export async function completePill(employeeId, pillId) {
   return apiRequest("/pillprogress", { method: "POST", body: { employeeId, pillId } });
 }
@@ -87,26 +87,53 @@ function alertTimestamp(alert) {
 function mapAlert(alert, reportById, employeeById) {
   const report = reportById.get(alert.reportId);
   const employee = report ? employeeById.get(report.employeeId) : null;
+=======
+function mapAlert(alert, employeeById) {
+  const employee = employeeById.get(alert.employeeId);
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   const detail = alert.subtitle?.trim();
-  const message = [alert.alertTitle, detail].filter(Boolean).join(" — ");
+  const suggestion = alert.suggestion?.trim();
+  const message = [alert.alertTitle, detail, suggestion].filter(Boolean).join(" — ");
 
   return {
     id: String(alert.id),
     backendId: alert.id,
-    employeeId: report?.employeeId || "",
-    message: message || report?.summary || "Alerta sem descrição",
+    employeeId: alert.employeeId || "",
+    message: message || "Alerta sem descrição",
     author: employee
       ? `${employee.name} - ${employee.role}`
-      : report?.employeeId || "Funcionário",
-    status: statusKey("", report),
+      : alert.employeeId || "Funcionário",
+    status: statusKey(alert.urgency),
     when: formatAlertDate(alert),
     timestamp: alertTimestamp(alert),
     confirmed: alert.confirmed,
+<<<<<<< HEAD
     suggestion: alert.suggestion?.trim() || "",
     reportId: alert.reportId
+=======
+    resolutionStatus: alert.status || "OPEN",
+    reportId: alert.reportId,
+    destination: alert.destination,
+    urgency: alert.urgency,
+    createdAt: alert.createdAt || alert.alertDate
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   };
 }
 
+function applyActiveAlertStatuses(employees, alerts) {
+  const priority = { normal: 0, attention: 1, help: 2 };
+  const employeeById = new Map(employees.map((employee) => [String(employee.id), employee]));
+
+  for (const alert of alerts) {
+    if (alert.resolutionStatus === "DONE") continue;
+    const employee = employeeById.get(String(alert.employeeId));
+    if (!employee) continue;
+
+    if ((priority[alert.status] ?? 0) > (priority[employee.status] ?? 0)) {
+      employee.status = alert.status;
+    }
+  }
+}
 export async function loginAndLoadDashboard(email, password) {
   const session = await login(email, password);
   return getDashboardData(session);
@@ -116,10 +143,19 @@ export async function getDashboardData(session) {
   if (session?.role === "EMPLOYEE") return getEmployeeDashboardData(session);
   if (session?.role !== "MANAGER") throw new Error("Tipo de conta não reconhecido. Entre novamente.");
 
+<<<<<<< HEAD
   // Duas rodadas de requisições em paralelo em vez de três em sequência.
   const [manager, reports] = await Promise.all([
     apiRequest(`/manager/${encodeURIComponent(session.userId)}`),
     getAllPages("/reports")
+=======
+  const manager = await apiRequest(`/manager/${encodeURIComponent(session.userId)}`);
+  const store = await apiRequest(`/store/${encodeURIComponent(manager.storeId)}`);
+  const [stores, employeeRecords, alertRecords] = await Promise.all([
+    apiRequest("/store"),
+    getAllPages(`/employee?storeId=${encodeURIComponent(manager.storeId)}`),
+    getAllPages(`/alert?storeId=${encodeURIComponent(manager.storeId)}`)
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   ]);
   const [store, employeeRecords, alertRecords] = await Promise.all([
     apiRequest(`/store/${encodeURIComponent(manager.storeId)}`),
@@ -129,22 +165,22 @@ export async function getDashboardData(session) {
 
   const employees = employeeRecords.map((employee) => mapEmployee(employee, store));
   const employeeById = new Map(employeeRecords.map((employee, index) => [employee.id, employees[index]]));
-  const reportById = new Map(reports.map((report) => [report.id, report]));
   const alerts = alertRecords
-    .map((alert) => mapAlert(alert, reportById, employeeById))
-    .sort((a, b) => new Date(reportById.get(b.reportId)?.createdAt || 0) - new Date(reportById.get(a.reportId)?.createdAt || 0));
+    .map((alert) => mapAlert(alert, employeeById))
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
+  applyActiveAlertStatuses(employees, alerts);
   const counts = employees.reduce((result, employee) => {
     result[employee.status] += 1;
     return result;
   }, { normal: 0, attention: 0, help: 0 });
 
-  const reportsByEmployee = new Map();
-  for (const report of reports) {
-    reportsByEmployee.set(report.employeeId, (reportsByEmployee.get(report.employeeId) || 0) + 1);
+  const alertsByEmployee = new Map();
+  for (const alert of alerts) {
+    alertsByEmployee.set(alert.employeeId, (alertsByEmployee.get(alert.employeeId) || 0) + 1);
   }
   const topUpdates = employees
-    .map((employee) => ({ name: employee.name.split(/\s+/)[0], count: reportsByEmployee.get(employee.id) || 0 }))
+    .map((employee) => ({ name: employee.name.split(/\s+/)[0], count: alertsByEmployee.get(employee.id) || 0 }))
     .filter((employee) => employee.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
@@ -152,12 +188,24 @@ export async function getDashboardData(session) {
   const percent = (count) => totalEmployees ? Math.round((count / totalEmployees) * 100) : 0;
 
   return {
+<<<<<<< HEAD
     unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
     user: { name: manager.name, email: manager.email, role: "Gestor da unidade" },
     employee: mockData.employee,
     menu: mockData.menu,
     sidebarTip: mockData.sidebarTip,
     greeting: mockData.greeting,
+=======
+    unit: { name: store.storeName, updatedAt: "agora" },
+    user: {
+      name: manager.name,
+      email: manager.email,
+      role: ["RH", "HR"].includes(String(manager.position || "").toUpperCase())
+        ? "RH"
+        : "Gestor da unidade"
+    },
+
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
     employees,
     alerts,
     recentAlerts: alerts.slice(0, 5),
@@ -176,13 +224,116 @@ export async function getDashboardData(session) {
       ]
     },
     topUpdates,
-    stores: [store],
+    stores,
     currentManager: manager
   };
 }
 
+<<<<<<< HEAD
 function redemptionReason(reward) {
   return `Resgate: ${reward.name}`;
+=======
+export async function refreshManagerAlerts(data) {
+  const storeId = encodeURIComponent(data.currentManager.storeId);
+  const [alertPage, employeePage] = await Promise.all([
+    apiRequest(`/alert?storeId=${storeId}&page=0&size=100`),
+    getAllPages(`/employee?storeId=${storeId}`)
+  ]);
+  const store = data.stores.find((item) => String(item.id) === String(data.currentManager.storeId));
+  const refreshedEmployees = employeePage.map((employee) => mapEmployee(employee, store));
+  const employeeById = new Map(refreshedEmployees.map((employee) => [employee.id, employee]));
+  const refreshedAlerts = alertPage.content.map((alert) => mapAlert(alert, employeeById));
+  const alertsById = new Map(data.alerts.map((alert) => [alert.id, alert]));
+  const employeesChanged = refreshedEmployees.some((employee) => {
+    const currentEmployee = data.employees.find((item) => item.id === employee.id);
+    return !currentEmployee || !sameEmployee(currentEmployee, employee);
+  });
+  const alertsChanged = refreshedAlerts.some((alert) => {
+    const currentAlert = alertsById.get(alert.id);
+    return !currentAlert || !sameAlert(currentAlert, alert);
+  });
+  if (!employeesChanged && !alertsChanged) return data;
+
+  for (const alert of refreshedAlerts) alertsById.set(alert.id, alert);
+
+  const alerts = [...alertsById.values()]
+    .map((alert) => {
+      const employee = employeeById.get(alert.employeeId);
+      return employee ? { ...alert, author: `${employee.name} - ${employee.role}` } : alert;
+    })
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const employees = refreshedEmployees;
+  applyActiveAlertStatuses(employees, alerts);
+
+  const alertCounts = new Map();
+  for (const alert of alerts) {
+    alertCounts.set(alert.employeeId, (alertCounts.get(alert.employeeId) || 0) + 1);
+  }
+  const topUpdates = employees
+    .map((employee) => ({
+      name: employee.name.split(/\s+/)[0],
+      count: alertCounts.get(employee.id) || 0
+    }))
+    .filter((employee) => employee.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  const counts = employees.reduce((result, employee) => {
+    result[employee.status] += 1;
+    return result;
+  }, { normal: 0, attention: 0, help: 0 });
+  const totalEmployees = employees.length;
+  const percent = (count) => totalEmployees ? Math.round((count / totalEmployees) * 100) : 0;
+  const summary = data.summary.map((item) => {
+    if (item.id === "attention") {
+      return { ...item, value: counts.attention + counts.help };
+    }
+    if (item.id === "pending") {
+      return { ...item, value: alerts.filter((alert) => !alert.confirmed).length };
+    }
+    return item;
+  });
+  const monthlyStatus = {
+    totalFollowed: totalEmployees,
+    items: [
+      { id: "normal", label: "Normal", percent: percent(counts.normal), color: "success" },
+      { id: "attention", label: "Atenção", percent: percent(counts.attention), color: "warning" },
+      { id: "help", label: "Precisa de ajuda", percent: percent(counts.help), color: "danger" }
+    ]
+  };
+
+  return {
+    ...data,
+    employees,
+    alerts,
+    recentAlerts: alerts.slice(0, 5),
+    topUpdates,
+    summary,
+    monthlyStatus
+  };
+}
+
+function sameAlert(left, right) {
+  return left.message === right.message
+    && left.author === right.author
+    && left.status === right.status
+    && left.when === right.when
+    && left.confirmed === right.confirmed
+    && left.resolutionStatus === right.resolutionStatus
+    && left.reportId === right.reportId
+    && left.destination === right.destination
+    && left.urgency === right.urgency
+    && left.createdAt === right.createdAt;
+}
+
+function sameEmployee(left, right) {
+  return left.name === right.name
+    && left.role === right.role
+    && left.days === right.days
+    && left.currentState === right.currentState
+    && left.interaction === right.interaction
+    && left.lastInteraction === right.lastInteraction;
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 }
 
 async function getEmployeeDashboardData(session) {
@@ -220,16 +371,12 @@ async function getEmployeeDashboardData(session) {
     unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
     user: { name: employee.name, email: employee.email, role: "Colaborador" },
     employee: {
-      ...mockData.employee,
       role: employee.position,
       points: balance.balance,
       history,
       chat,
       redeemedRewardIds
     },
-    menu: mockData.menu,
-    sidebarTip: mockData.sidebarTip,
-    greeting: mockData.greeting,
     employees: [],
     alerts: [],
     recentAlerts: [],
@@ -244,6 +391,13 @@ export async function createEmployee(payload) {
   return apiRequest("/employee", { method: "POST", body: payload });
 }
 
+export async function updateOwnProfile(name, email) {
+  return apiRequest("/auth/profile", {
+    method: "PUT",
+    body: { name, email }
+  });
+}
+
 export async function sendEmployeeMessage(employeeId, content, pillId = null) {
   return apiRequest("/chat", {
     method: "POST",
@@ -251,6 +405,7 @@ export async function sendEmployeeMessage(employeeId, content, pillId = null) {
   });
 }
 
+<<<<<<< HEAD
 // O resgate era só uma conta feita no navegador e sumia ao recarregar a página.
 // A API de pontos aceita lançamentos negativos, então o resgate passa a ser gravado.
 export async function redeemReward(employeeId, reward) {
@@ -264,6 +419,8 @@ export async function startEmployeePillQuiz(employeeId) {
   return apiRequest(`/chat/quiz/${encodeURIComponent(employeeId)}`, { method: "POST" });
 }
 
+=======
+>>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 export async function finishEmployeeConversation(employeeId) {
   return apiRequest(`/chat/finish/${encodeURIComponent(employeeId)}`, { method: "POST" });
 }
