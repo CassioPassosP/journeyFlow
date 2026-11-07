@@ -307,10 +307,7 @@ async function getEmployeeDashboardData(session) {
     date: formatDateTime(entry.createdAt),
     points: entry.points
   }));
-  const rewards = mockData.employee.rewards;
-  const redeemedRewardIds = rewards
-    .filter((reward) => pointEntries.some((entry) => entry.points < 0 && entry.reason === redemptionReason(reward)))
-    .map((reward) => reward.id);
+
   const chat = [...chatEntries]
     .sort((a, b) => new Date(a.dateSent || a.createdAt) - new Date(b.dateSent || b.createdAt))
     .map((entry) => ({
@@ -328,7 +325,6 @@ async function getEmployeeDashboardData(session) {
       points: balance.balance,
       history,
       chat,
-      redeemedRewardIds
     },
     employees: [],
     alerts: [],

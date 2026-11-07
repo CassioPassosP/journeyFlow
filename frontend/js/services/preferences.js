@@ -34,19 +34,6 @@ export function loadUserSettings(defaultUser, userKey) {
     throw new Error("As configurações salvas do usuário são inválidas.");
   }
 
-<<<<<<< HEAD
-  const name = typeof settings.name === "string" && settings.name.trim() ? settings.name : defaultUser.name;
-  const email = typeof settings.email === "string" && settings.email.trim() ? settings.email : defaultUser.email;
-
-  return { name, email, theme: loadTheme() };
-}
-
-export function saveUserSettings(settings, userKey) {
-  const { theme, ...profile } = settings;
-  window.localStorage.setItem(scopedKey(settingsKey, userKey), JSON.stringify(profile));
-  // O tema fica numa chave global para valer já na tela de login.
-  window.localStorage.setItem(settingsKey, JSON.stringify({ theme: theme === "dark" ? "dark" : "light" }));
-=======
   const theme = settings.theme === "dark" ? "dark" : "light";
 
   return { name: defaultUser.name, email: defaultUser.email, theme };
@@ -54,7 +41,6 @@ export function saveUserSettings(settings, userKey) {
 
 export function saveUserSettings(settings) {
   window.localStorage.setItem(settingsKey, JSON.stringify({ theme: settings.theme }));
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
 }
 
 export function loadReadNotifications(userKey) {

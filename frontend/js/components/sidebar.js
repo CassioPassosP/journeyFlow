@@ -8,19 +8,22 @@ const employeeMenu = [
   { id: "settings", label: "Configurações", icon: "settings" }
 ];
 
-<<<<<<< HEAD
 function isCurrent(item, activePage) {
   return activePage === item.id
     || (activePage.startsWith("employees") && item.id === "employees")
     || (activePage.startsWith("alerts") && item.id === "alerts");
 }
 
-export function renderSidebar(container, data, activePage = "dashboard", role = "manager") {
-  const menu = role === "employee" ? employeeMenu : data.menu;
+const managerMenu = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard" },
+  { id: "employees", label: "Funcionários", icon: "users" },
+  { id: "alerts", label: "Alertas", icon: "alerts" },
+  { id: "settings", label: "Configurações", icon: "settings" }
+];
 
-  // O menu só muda quando o perfil muda. Nas demais navegações apenas o item ativo é
-  // atualizado, o que evita piscar e preserva o foco do teclado nos links.
-  const signature = `${role}:${menu.map((item) => item.id).join(",")}`;
+export function renderSidebar(container, data, activePage = "dashboard", role = "manager") {
+  const menu = role === "employee" ? employeeMenu : managerMenu;
+  const signature = role + ":" + menu.map((item) => item.id).join(",");
   if (container.dataset.signature === signature) {
     container.querySelectorAll(".sidebar__link").forEach((link, index) => {
       if (isCurrent(menu[index], activePage)) {
@@ -32,18 +35,6 @@ export function renderSidebar(container, data, activePage = "dashboard", role = 
     return;
   }
   container.dataset.signature = signature;
-
-=======
-const managerMenu = [
-  { id: "dashboard", label: "Dashboard", icon: "dashboard" },
-  { id: "employees", label: "Funcionários", icon: "users" },
-  { id: "alerts", label: "Alertas", icon: "alerts" },
-  { id: "settings", label: "Configurações", icon: "settings" }
-];
-
-export function renderSidebar(container, data, activePage = "dashboard", role = "manager") {
-  const menu = role === "employee" ? employeeMenu : managerMenu;
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
   const menuItems = menu.map((item) => {
     const currentPage = isCurrent(item, activePage) ? ' aria-current="page"' : "";
     const href = role === "employee" ? `#employee/${item.id}` : `#${item.id}`;

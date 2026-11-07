@@ -220,23 +220,16 @@ export function renderEmployeeDetails(container, employee, alerts) {
     </section>
     <div class="employee-metrics">
       <article><span>Unidade</span><strong>${escapeHtml(employee.unit || "Não informada")}</strong></article>
-<<<<<<< HEAD
       <article><span>Data de contratação</span><strong>${escapeHtml(hiredAt)}</strong></article>
       <article><span>Alertas registrados</span><strong>${employeeAlerts.length} <small>${pendingCount} sem confirmar</small></strong></article>
       <article><span>Última interação</span><strong>${escapeHtml(employee.interaction)}</strong></article>
     </div>
     <div class="employee-details-grid">
       <section class="data-panel"><div class="data-panel__heading"><h2>Alertas recentes</h2></div>${recentAlerts}</section>
-      <section class="data-panel suggestions"><h2>Sugestões de acompanhamento</h2><p>Sugestões de ações para este funcionário.</p>${suggestions}</section>
-=======
-      <article><span>Data de contratação</span><strong>${escapeHtml(employee.hiredAt ? new Date(`${employee.hiredAt}T00:00:00`).toLocaleDateString("pt-BR") : "Não informada")}</strong></article>
-    </div>
-    <div class="employee-details-grid">
-      <section class="data-panel"><div class="data-panel__heading"><h2>Alertas recentes</h2></div>${recentAlerts}</section>
-      <section class="data-panel suggestions"><h2>Sugestões de acompanhamento</h2><p>${employeeAlerts.length
-        ? escapeHtml(employeeAlerts[0].message)
-        : "Nenhuma sugestão de acompanhamento registrada."}</p></section>
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
+      <section class="data-panel suggestions"><h2>Sugestões de acompanhamento</h2>
+        <p>${employeeAlerts.length ? escapeHtml(employeeAlerts[0].message) : "Nenhuma sugestão de acompanhamento registrada."}</p>
+        ${suggestions}
+      </section>
     </div>
   `;
 }

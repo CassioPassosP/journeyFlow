@@ -128,26 +128,26 @@ function renderHome(container, employee, messages, notice) {
 }
 
 function renderProgress(container, employee) {
-<<<<<<< HEAD
-  // Resgates entram no histórico com pontos negativos; antes eles subtraíam do total "conquistado"
-  // e eram contados como "interações registradas".
   const earnedEntries = employee.history.filter((entry) => entry.points > 0);
   const totalEarned = earnedEntries.reduce((total, entry) => total + entry.points, 0);
-  const nextReward = [...employee.rewards]
-    .sort((a, b) => a.points - b.points)
-    .find((reward) => reward.points > employee.points);
-  const progress = nextReward ? Math.min(100, Math.round((employee.points / nextReward.points) * 100)) : 100;
-  container.innerHTML = `
-    ${pageHeading("Meu progresso", "Acompanhe seus pontos e continue avançando.")}
-    <section class="employee-progress-summary"><article><span>⭐</span><small>Saldo atual</small><strong>${escapeHtml(points(employee.points))}</strong></article><article><span>🎉</span><small>Pontos conquistados</small><strong>${escapeHtml(points(totalEarned))}</strong></article><article><span>💬</span><small>Interações registradas</small><strong>${escapeHtml(earnedEntries.length)}</strong></article></section>
-    <section class="employee-progress-panel"><h2>${nextReward ? `Sua próxima recompensa: ${escapeHtml(nextReward.name)}` : "Você desbloqueou todas as recompensas!"}</h2><div class="employee-progress-track" role="progressbar" aria-label="Progresso para a próxima recompensa" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><span style="width:${progress}%"></span></div><p>${escapeHtml(employee.points)} de ${escapeHtml(nextReward?.points || employee.points)} pontos</p></section>
-    <section class="employee-progress-panel"><h2>Como ganhar mais pontos</h2><ul class="employee-ways-list"><li>🗨️ Responda às perguntas da conversa <strong>+10 pontos</strong></li><li>⭐ Conte como foi sua experiência <strong>+20 pontos</strong></li></ul></section>
-=======
   container.innerHTML = `
     ${pageHeading("Meu progresso", "Saldo e atividades registrados na sua conta.")}
-    <section class="employee-progress-summary"><article><span>⭐</span><small>Saldo atual</small><strong>${escapeHtml(points(employee.points))}</strong></article><article><span>💬</span><small>Atividades registradas</small><strong>${escapeHtml(employee.history.length)}</strong></article></section>
-    <section class="employee-progress-panel"><h2>Histórico de pontos</h2><ul>${historyItems(employee.history) || '<li class="empty-state">Nenhuma atividade registrada.</li>'}</ul></section>
->>>>>>> 92d01f6 (AAAAAAAAAAAAAAaaaAaAaAaAAAaaaaaaaaaAaAAAAAAAAAAaaaaaaaaaaaaaaAAAAAAAAaAAAAaA)
+    <section class="employee-progress-summary">
+      <article><span>⭐</span><small>Saldo atual</small><strong>${escapeHtml(points(employee.points))}</strong></article>
+      <article><span>🎉</span><small>Pontos conquistados</small><strong>${escapeHtml(points(totalEarned))}</strong></article>
+      <article><span>💬</span><small>Atividades registradas</small><strong>${escapeHtml(employee.history.length)}</strong></article>
+    </section>
+    <section class="employee-progress-panel">
+      <h2>Histórico de pontos</h2>
+      <ul>${historyItems(employee.history) || '<li class="empty-state">Nenhuma atividade registrada.</li>'}</ul>
+    </section>
+    <section class="employee-progress-panel">
+      <h2>Como ganhar mais pontos</h2>
+      <ul class="employee-ways-list">
+        <li>Responda corretamente ao quiz de uma pílula <strong>+10 pontos</strong></li>
+        <li>Conclua uma conversa analisada <strong>+5 pontos, uma vez por dia</strong></li>
+      </ul>
+    </section>
   `;
 }
 
