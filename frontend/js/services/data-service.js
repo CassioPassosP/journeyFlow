@@ -73,6 +73,13 @@ function mapEmployee(employee, store) {
   };
 }
 
+function alertTimestamp(alert) {
+  const value = alert.alertDate || alert.createdAt;
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 function mapAlert(alert, employeeById) {
   const employee = employeeById.get(alert.employeeId);
   const detail = alert.subtitle?.trim();
