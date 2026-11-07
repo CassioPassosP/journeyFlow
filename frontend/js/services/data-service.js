@@ -1,4 +1,5 @@
 import { apiRequest, login } from "./api-client.js";
+import { formatRoleLabel, isEmployeeRole, isManagerRole, normalizeRole } from "../utils/roles.js";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 100;
@@ -59,7 +60,7 @@ function mapEmployee(employee, store) {
   return {
     id: employee.id,
     name: employee.name,
-    role: employee.position,
+    role: formatRoleLabel(employee.position),
     unit: store.storeName,
     storeId: employee.storeId,
     hiredAt,
@@ -126,8 +127,9 @@ export async function loginAndLoadDashboard(email, password) {
 }
 
 export async function getDashboardData(session) {
-  if (session?.role === "EMPLOYEE") return getEmployeeDashboardData(session);
-  if (session?.role !== "MANAGER") throw new Error("Tipo de conta não reconhecido. Entre novamente.");
+  const accountRole = normalizeRole(session?.role);
+  if (isEmployeeRole(accountRole)) return getEmployeeDashboardData(session);
+  if (!isManagerRole(accountRole)) throw new Error("Tipo de conta não reconhecido. Entre novamente.");
 
   const manager = await apiRequest(`/manager/${encodeURIComponent(session.userId)}`);
   const [stores, store, employeeRecords, alertRecords] = await Promise.all([
@@ -166,9 +168,9 @@ export async function getDashboardData(session) {
     user: {
       name: manager.name,
       email: manager.email,
-      role: ["RH", "HR"].includes(String(manager.position || "").toUpperCase())
-        ? "RH"
-        : "Gestor da unidade"
+      role: formatRoleLabel(
+        ["RH", "HR"].includes(normalizeRole(manager.position)) ? "RH" : accountRole
+      )
     },
 
     employees,
@@ -326,9 +328,9 @@ async function getEmployeeDashboardData(session) {
 
   return {
     unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
-    user: { name: employee.name, email: employee.email, role: "Colaborador" },
+    user: { name: employee.name, email: employee.email, role: formatRoleLabel(session.role) },
     employee: {
-      role: employee.position,
+      role: formatRoleLabel(employee.position),
       points: balance.balance,
       history,
       chat,

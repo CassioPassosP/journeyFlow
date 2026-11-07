@@ -1,4 +1,5 @@
 import { escapeHtml } from "../utils/dom.js";
+import { formatRoleLabel } from "../utils/roles.js";
 
 function points(value) {
   return `${Number(value).toLocaleString("pt-BR")} pontos`;
@@ -219,7 +220,7 @@ function renderPills(container, data, notice) {
   `;
 }
 export function renderEmployeePage(container, data, page, messages, notice) {
-  const employee = { ...data.employee, ...data.user, role: data.employee.role, name: data.user.name, email: data.user.email };
+  const employee = { ...data.employee, ...data.user, role: formatRoleLabel(data.employee.role), name: data.user.name, email: data.user.email };
   const employeeMessages = messages.map((message) => ({
     ...message,
     text: message.text.replaceAll("{role}", employee.role)

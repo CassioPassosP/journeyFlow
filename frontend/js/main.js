@@ -16,6 +16,7 @@ import { renderStatusChart } from "./components/status-chart.js";
 import { renderUpdatesChart } from "./components/updates-chart.js";
 import { renderRecentAlerts } from "./components/recent-alerts.js";
 import { renderEmployeePage } from "./components/employee-pages.js";
+import { isEmployeeRole, isManagerRole } from "./utils/roles.js";
 import {
   loadReadNotifications,
   loadTheme,
@@ -156,11 +157,11 @@ function routeKey() {
 // Devolve true quando precisou trocar a rota; o hashchange seguinte faz o render.
 function setRouteForRole(role) {
   const isEmployeeRoute = window.location.hash.startsWith("#employee/");
-  if (role === "EMPLOYEE" && !isEmployeeRoute) {
+  if (isEmployeeRole(role) && !isEmployeeRoute) {
     window.location.hash = "#employee/home";
     return true;
   }
-  if (role === "MANAGER" && isEmployeeRoute) {
+  if (isManagerRole(role) && isEmployeeRoute) {
     window.location.hash = "#dashboard";
     return true;
   }
@@ -363,7 +364,7 @@ function canRefreshCurrentPage() {
 
 async function refreshDashboardData() {
   const session = getSession();
-  if (!data || session?.role !== "MANAGER" || document.hidden || refreshInProgress) return;
+  if (!data || !isManagerRole(session?.role) || document.hidden || refreshInProgress) return;
   refreshInProgress = true;
   try {
     const updatedData = await refreshManagerAlerts(data);

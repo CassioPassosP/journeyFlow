@@ -1,4 +1,5 @@
 import { escapeHtml, iconMarkup } from "../utils/dom.js";
+import { formatRoleLabel } from "../utils/roles.js";
 
 export function renderHeader(container, data, { alerts, readNotifications, notificationsOpen = false, notificationError = "", role = "manager", instant = false }) {
   const firstName = data.user.name.trim().split(/\s+/)[0];
@@ -45,7 +46,7 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
           <span class="header__avatar" aria-hidden="true">${escapeHtml(initials)}</span>
           <span class="header__profile-copy">
             <span class="header__name">${escapeHtml(firstName)}</span>
-            <span class="header__role">${escapeHtml(data.user.role)}</span>
+            <span class="header__role">${escapeHtml(formatRoleLabel(data.user.role))}</span>
           </span>
         </div>
         <button class="header__logout" type="button" data-logout>Sair</button>

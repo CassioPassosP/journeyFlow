@@ -1,4 +1,5 @@
 import { escapeHtml, getStatusConfig } from "../utils/dom.js";
+import { formatRoleLabel } from "../utils/roles.js";
 
 function statusBadge(status) {
   const config = getStatusConfig(status);
@@ -58,7 +59,7 @@ function filterEmployees(employees, query, sorts, statuses, priority) {
   };
 
   return employees
-    .filter((employee) => `${employee.name} ${employee.role}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery))
+    .filter((employee) => `${employee.name} ${formatRoleLabel(employee.role)}`.toLocaleLowerCase("pt-BR").includes(normalizedQuery))
     .filter((employee) => statuses === null || statuses.includes(employee.status))
     .sort((a, b) => {
       for (const sort of order) {
@@ -72,7 +73,7 @@ function filterEmployees(employees, query, sorts, statuses, priority) {
 function employeesResultsMarkup(filtered) {
   const rows = filtered.map((employee) => `
     <tr>
-      <td><strong>${escapeHtml(employee.name)}</strong><span>${escapeHtml(employee.role)}</span></td>
+      <td><strong>${escapeHtml(employee.name)}</strong><span>${escapeHtml(formatRoleLabel(employee.role))}</span></td>
       <td>${escapeHtml(employee.days)} dias</td>
       <td class="status-cell">${statusBadge(employee.status)}</td>
       <td>${escapeHtml(employee.interaction)}</td>
@@ -214,7 +215,7 @@ export function renderEmployeeDetails(container, employee, alerts) {
     ${pageHeading("Detalhes do funcionário", "Acompanhe o estado atual de todos os funcionários", `<a href="#employees">Funcionários</a> &gt; ${escapeHtml(employee.name)}`)}
     <section class="employee-summary">
       <span class="employee-summary__avatar">${escapeHtml(employee.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toLocaleUpperCase("pt-BR"))}</span>
-      <div><h2>${escapeHtml(employee.name)}</h2><p>${escapeHtml(employee.role)}</p></div>
+      <div><h2>${escapeHtml(employee.name)}</h2><p>${escapeHtml(formatRoleLabel(employee.role))}</p></div>
       <div class="employee-summary__days"><span>Dias de contrato</span><strong>${escapeHtml(employee.days)}</strong></div>
       ${statusBadge(employee.status)}
     </section>
