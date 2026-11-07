@@ -44,7 +44,8 @@ function historyItems(history, limit = history.length) {
 
 function shouldOfferConversationCompletion(messages) {
   const lastMessage = messages[messages.length - 1];
-  if (!lastMessage || lastMessage.author !== "bot") return true;
+  if (!lastMessage) return false;
+  if (lastMessage.author !== "bot") return true;
 
   const text = lastMessage.text;
   return !text.startsWith("Identifiquei que talvez seja importante oferecer um acompanhamento humano.")

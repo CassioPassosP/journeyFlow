@@ -1,5 +1,6 @@
 import { apiRequest, login } from "./api-client.js";
 import { formatRoleLabel, isEmployeeRole, isManagerRole, normalizeRole } from "../utils/roles.js";
+import { buildEmployeeNotifications } from "./notifications.js";
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 100;
@@ -89,6 +90,7 @@ function mapAlert(alert, employeeById) {
 
   return {
     id: String(alert.id),
+    kind: "alert",
     backendId: alert.id,
     employeeId: alert.employeeId || "",
     message: message || "Alerta sem descrição",
@@ -325,6 +327,7 @@ async function getEmployeeDashboardData(session) {
       pillId: entry.pillId,
       time: formatDateTime(entry.dateSent || entry.createdAt)
     }));
+  const notifications = buildEmployeeNotifications(employee, pills, pillProgress);
 
   return {
     unit: { name: store.storeName, updatedAt: formatUpdatedAt() },
@@ -337,6 +340,7 @@ async function getEmployeeDashboardData(session) {
     },
     employees: [],
     alerts: [],
+    notifications,
     recentAlerts: [],
     pills,
     pillProgress,

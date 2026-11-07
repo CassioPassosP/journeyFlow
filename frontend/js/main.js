@@ -17,6 +17,7 @@ import { renderUpdatesChart } from "./components/updates-chart.js";
 import { renderRecentAlerts } from "./components/recent-alerts.js";
 import { renderEmployeePage } from "./components/employee-pages.js";
 import { isEmployeeRole, isManagerRole } from "./utils/roles.js";
+import { buildEmployeeNotifications, isNotificationRead } from "./services/notifications.js";
 import {
   loadReadNotifications,
   loadTheme,
@@ -46,7 +47,7 @@ let employeeSortPriority = [...DEFAULT_SORT_PRIORITY];
 let employeeStatuses = null;
 let alertQuery = "";
 let alertFilters = { statuses: [] };
-let readNotifications = new Set();
+let readNotifications = new Map();
 let theme = "light";
 let notificationsOpen = false;
 let notificationError = "";
@@ -55,6 +56,7 @@ let lastRouteKey = "";
 let busyCount = 0;
 let noticeTimer;
 let sendingMessage = false;
+let lastHeaderNotificationSignature = "";
 
 /* ------------------------------------------------------------------ */
 /* Estado e utilitários                                                */
@@ -69,11 +71,12 @@ function resetUiState() {
   employeeStatuses = null;
   alertQuery = "";
   alertFilters = { statuses: [] };
-  readNotifications = new Set();
+  readNotifications = new Map();
   notificationsOpen = false;
   notificationError = "";
   employeeNotice = "";
   lastRouteKey = "";
+  lastHeaderNotificationSignature = "";
   sendingMessage = false;
   window.clearTimeout(noticeTimer);
 }
@@ -178,13 +181,26 @@ function isEmployeeRoute() {
 
 function headerOptions(overrides = {}) {
   return {
-    alerts: data.alerts,
+    notifications: data.notifications || data.alerts,
     readNotifications,
     notificationsOpen,
     notificationError,
     role: isEmployeeRoute() ? "employee" : "manager",
     ...overrides
   };
+}
+
+function currentNotifications() {
+  return data?.notifications || data?.alerts || [];
+}
+
+function notificationSignature() {
+  return JSON.stringify(currentNotifications().map((notification) => [
+    String(notification.id),
+    notification.message,
+    notification.when,
+    isNotificationRead(notification, readNotifications)
+  ]));
 }
 
 // Antes, abrir as notificações ou marcá-las como lidas recriava o cabeçalho sem informar o perfil,
@@ -194,6 +210,7 @@ function refreshHeader(overrides = {}) {
     ? { ...data, user: { ...data.user, role: data.employee.role } }
     : data;
   renderHeader(document.querySelector("#header"), headerData, headerOptions(overrides));
+  lastHeaderNotificationSignature = notificationSignature();
 }
 
 // Abrir/fechar apenas alterna o painel existente, sem recriar o cabeçalho.
@@ -211,6 +228,21 @@ let refreshInProgress = false;
 let refreshPendingRender = false;
 
 const DATA_REFRESH_INTERVAL_MS = 15000;
+function refreshNotificationState() {
+  if (!data) return;
+
+  if (data.currentEmployee) {
+    const updatedNotifications = buildEmployeeNotifications(data.currentEmployee, data.pills, data.pillProgress);
+    if (JSON.stringify(updatedNotifications) !== JSON.stringify(data.notifications || [])) {
+      data.notifications = updatedNotifications;
+    }
+  }
+
+  if (notificationSignature() !== lastHeaderNotificationSignature) {
+    refreshHeader({ instant: true });
+  }
+}
+
 function persistReadNotifications(nextReadNotifications) {
   try {
     saveReadNotifications(nextReadNotifications, userKey());
@@ -460,13 +492,18 @@ document.addEventListener("keydown", (event) => {
 });
 window.addEventListener("focus", () => {
   refreshDashboardData();
+  refreshNotificationState();
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) refreshDashboardData();
+  if (!document.hidden) {
+    refreshDashboardData();
+    refreshNotificationState();
+  }
 });
 
 window.setInterval(refreshDashboardData, DATA_REFRESH_INTERVAL_MS);
+window.setInterval(refreshNotificationState, 60000);
 document.addEventListener("input", (event) => {
   if (!data) return;
   if (event.target.matches("[data-search-employees]")) {
@@ -545,19 +582,22 @@ document.addEventListener("click", async (event) => {
     }
   }
   if (closest("[data-mark-all-read]")) {
-    persistReadNotifications(new Set(data.alerts.map((alert) => alert.id)));
+    const nextReadNotifications = new Map(readNotifications);
+    const readAt = Date.now();
+    currentNotifications().forEach((notification) => nextReadNotifications.set(String(notification.id), readAt));
+    persistReadNotifications(nextReadNotifications);
     refreshHeader({ instant: true });
     return;
   }
 
   const notificationButton = closest("[data-open-notification]");
   if (notificationButton) {
-    const nextReadNotifications = new Set(readNotifications);
-    nextReadNotifications.add(notificationButton.dataset.openNotification);
+    const nextReadNotifications = new Map(readNotifications);
+    nextReadNotifications.set(notificationButton.dataset.openNotification, Date.now());
     persistReadNotifications(nextReadNotifications);
     notificationsOpen = false;
     refreshHeader({ instant: true });
-    window.location.hash = "#alerts";
+    window.location.hash = notificationButton.dataset.notificationDestination || "#alerts";
     return;
   }
 
@@ -684,7 +724,7 @@ document.addEventListener("submit", async (event) => {
       setRouteForRole(getSession().role);
       readNotifications = withFallback(
         () => loadReadNotifications(userKey()),
-        new Set(),
+        new Map(),
         "Não foi possível ler as notificações lidas."
       );
       showApplication();
@@ -755,7 +795,7 @@ document.addEventListener("submit", async (event) => {
         ? { ...data, user: { ...data.user, role: data.employee.role } }
         : data;
       renderHeader(document.querySelector("#header"), headerData, {
-        alerts: data.alerts,
+        notifications: data.notifications || data.alerts,
         readNotifications,
         notificationsOpen,
         role: isEmployee ? "employee" : "manager"
@@ -868,7 +908,7 @@ async function initialize() {
     setRouteForRole(session.role);
     readNotifications = withFallback(
       () => loadReadNotifications(userKey()),
-      new Set(),
+      new Map(),
       "Não foi possível ler as notificações lidas."
     );
     showApplication();

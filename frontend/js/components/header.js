@@ -1,7 +1,8 @@
 import { escapeHtml, iconMarkup } from "../utils/dom.js";
 import { formatRoleLabel } from "../utils/roles.js";
+import { isNotificationRead } from "../services/notifications.js";
 
-export function renderHeader(container, data, { alerts, readNotifications, notificationsOpen = false, notificationError = "", role = "manager", instant = false }) {
+export function renderHeader(container, data, { alerts: alertNotifications = [], notifications = null, readNotifications = new Map(), notificationsOpen = false, notificationError = "", role = "manager", instant = false }) {
   const firstName = data.user.name.trim().split(/\s+/)[0];
   const initials = data.user.name
     .trim()
@@ -10,9 +11,18 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
     .map((name) => name[0])
     .join("")
     .toLocaleUpperCase("pt-BR");
+  const alerts = notifications || alertNotifications;
+  const savedReadNotifications = readNotifications;
+  readNotifications = {
+    has(id) {
+      const notification = alerts.find((item) => String(item.id) === String(id));
+      if (notification) return isNotificationRead(notification, savedReadNotifications);
+      return savedReadNotifications.has(String(id));
+    }
+  };
   const unreadCount = alerts.filter((alert) => !readNotifications.has(alert.id)).length;
   const notificationItems = alerts.map((alert) => `
-    <button class="notification-item${readNotifications.has(alert.id) ? " notification-item--read" : ""}" type="button" data-open-notification="${escapeHtml(alert.id)}">
+        <button class="notification-item${readNotifications.has(alert.id) ? " notification-item--read" : ""}" type="button" data-open-notification="${escapeHtml(alert.id)}" data-notification-destination="${escapeHtml(role === "employee" ? alert.destination || "#employee/home" : "#alerts")}">
       <span class="notification-item__dot notification-item__dot--${escapeHtml(alert.status)}" aria-hidden="true"></span>
       <span class="notification-item__copy">
         <strong>${escapeHtml(alert.message)}</strong>
@@ -40,7 +50,7 @@ export function renderHeader(container, data, { alerts, readNotifications, notif
           </div>
           ${notificationError ? `<p class="notification-popover__error" role="alert">${escapeHtml(notificationError)}</p>` : ""}
           <div class="notification-popover__list">${notificationItems || '<p class="notification-popover__empty">Você não tem notificações.</p>'}</div>
-          <a class="notification-popover__footer" href="#alerts">Ver todos os alertas</a>
+          <a class="notification-popover__footer" href="${role === "employee" ? "#employee/pills" : "#alerts"}">${role === "employee" ? "Ver minha trilha" : "Ver todos os alertas"}</a>
         </section>
         <div class="header__profile">
           <span class="header__avatar" aria-hidden="true">${escapeHtml(initials)}</span>

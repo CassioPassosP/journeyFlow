@@ -45,12 +45,23 @@ export function saveUserSettings(settings) {
 
 export function loadReadNotifications(userKey) {
   const readIds = readStoredJson(scopedKey(readNotificationsKey, userKey), []);
+  if (Array.isArray(readIds) && readIds.every((id) => typeof id === "string")) {
+    // Migra o formato anterior, que guardava apenas os IDs lidos.
+    const migratedAt = Date.now();
+    return new Map(readIds.map((id) => [id, migratedAt]));
+  }
+  if (typeof readIds === "object" && readIds !== null && !Array.isArray(readIds)) {
+    const entries = Object.entries(readIds);
+    if (entries.every(([id, readAt]) => id.length > 0 && Number.isFinite(readAt))) {
+      return new Map(entries);
+    }
+  }
   if (!Array.isArray(readIds) || !readIds.every((id) => typeof id === "string")) {
     throw new Error("A lista de notificações lidas salva no navegador é inválida.");
   }
-  return new Set(readIds);
+  return new Map(readIds.map((id) => [id, Date.now()]));
 }
 
-export function saveReadNotifications(readIds, userKey) {
-  window.localStorage.setItem(scopedKey(readNotificationsKey, userKey), JSON.stringify([...readIds]));
+export function saveReadNotifications(readAtById, userKey) {
+  window.localStorage.setItem(scopedKey(readNotificationsKey, userKey), JSON.stringify(Object.fromEntries(readAtById)));
 }

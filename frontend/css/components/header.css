@@ -212,6 +212,15 @@
   background: var(--color-danger);
 }
 
+.notification-item__dot--normal,
+.notification-item__dot--info {
+  background: var(--color-primary);
+}
+
+.notification-item__dot--success {
+  background: var(--color-success);
+}
+
 .notification-item__copy {
   display: grid;
   gap: var(--space-1);
